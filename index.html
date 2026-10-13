@@ -46,6 +46,11 @@ header{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1p
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .seg-label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .theme{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:13px}
+.clock{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;padding:5px 2px}
+.gate{max-width:360px;margin:60px auto;text-align:center}
+.gate input[type=password]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);font-size:16px;margin:12px 0}
+.gate .err{color:var(--bad);font-size:13px;min-height:18px;margin-top:6px}
+.gate button{width:100%}
 main{max-width:1500px;margin:0 auto;padding:16px}
 .view{display:none}.view.on{display:block}
 /* Objections layout */
@@ -280,7 +285,9 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
       <button class="tab" role="tab" data-view="lock" aria-selected="false">Lock-in</button>
       <button class="tab" role="tab" data-view="facts" aria-selected="false">Quick facts</button>
       <button class="tab" role="tab" data-view="stats" aria-selected="false">My stats</button>
+      <button class="tab" role="tab" data-view="grid" aria-selected="false">Quick Grid 🔒</button>
     </div>
+    <span class="clock" id="localClock" title="Local time"></span>
     <div class="search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="Type what the customer said… (e.g. “paid on the 1st”)" autocomplete="off">
@@ -326,6 +333,9 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
 
   <!-- LOCK-IN -->
   <section class="view" id="view-lock"><div class="wrap" id="lock"></div></section>
+
+  <!-- QUICK GRID (password-gated) -->
+  <section class="view" id="view-grid"><div class="wrap" id="grid"></div></section>
 </main>
 <button class="totop" id="toTop" aria-label="Back to top">↑</button>
 
@@ -3135,6 +3145,47 @@ function pathBackText(){
   const name = d("name") || "{your name}", num = d("num") || "{number}", day = d("day") || "{day}", time = d("time") || "{time}", bring = d("bring") || "{card, ID, spouse}";
   return `If you truly have to go, here’s the plan so this doesn’t fall through the cracks: on ${day} at ${time}, you call ${num} and ask for ${name}. Have ${bring} with you. It takes about ten minutes. Would you set a reminder on your phone right now while I’m on the line?`;
 }
+/* ===================== QUICK GRID (password-gated) ===================== */
+const GRID_PASSWORD = "Black@0712@Panther";
+function gridUnlocked(){ try{ return sessionStorage.getItem("op_grid_unlocked")==="1"; }catch(e){ return false; } }
+function renderGrid(){
+  if(!gridUnlocked()){
+    $("#grid").innerHTML = `<div class="gate">
+      <h2>Quick Grid is locked</h2>
+      <p class="note">Enter the password to view the objection quick-reference grid.</p>
+      <input type="password" id="gridPw" placeholder="Password" autocomplete="off">
+      <div class="err" id="gridErr"></div>
+      <button class="pbtn" id="gridUnlockBtn">Unlock</button>
+    </div>`;
+    const tryUnlock = () => {
+      const val = $("#gridPw").value;
+      if(val === GRID_PASSWORD){
+        try{ sessionStorage.setItem("op_grid_unlocked","1"); }catch(e){}
+        renderGrid();
+      } else {
+        $("#gridErr").textContent = "Wrong password.";
+        $("#gridPw").value = "";
+        $("#gridPw").focus();
+      }
+    };
+    $("#gridUnlockBtn").addEventListener("click", tryUnlock);
+    $("#gridPw").addEventListener("keydown", e => { if(e.key==="Enter") tryUnlock(); });
+    $("#gridPw").focus();
+    return;
+  }
+  const cards = Object.entries(CATS).map(([key,label])=>{
+    const items = O.filter(o=>o.cat===key);
+    const trs = items.map(o=>{
+      const line = (o.scripts && o.scripts[0]) ? o.scripts[0][1] : (o.goal || "");
+      const short = line.length>130 ? line.slice(0,127)+"…" : line;
+      return `<tr><td><a href="#${o.id}" data-id="${o.id}">${esc(o.title)}</a>${o.hot?' <span class="badge hot">Hot</span>':""}</td><td>${fmt(short)}</td></tr>`;
+    }).join("");
+    return `<div class="card"><h2>${esc(label)}</h2><div class="tbl-wrap"><table><thead><tr><th>Trigger</th><th>Lead-in response</th></tr></thead><tbody>${trs}</tbody></table></div></div>`;
+  }).join("");
+  $("#grid").innerHTML = `<div class="card"><h2>Objection quick-reference grid</h2><p class="note" style="margin:0">Click any row to jump to its full detail. <button class="pbtn ghost" id="gridLockBtn" style="margin-left:8px;width:auto;padding:4px 10px;font-size:12px">Lock again</button></p></div>` + cards;
+  const lockBtn = $("#gridLockBtn");
+  if(lockBtn) lockBtn.addEventListener("click", () => { try{ sessionStorage.removeItem("op_grid_unlocked"); }catch(e){} renderGrid(); });
+}
 function renderLock(){
   const t = state.tier;
   $("#lock").innerHTML = `<div class="card"><h2>Lock it in on this call</h2><p class="note" style="margin:0">Customers who leave to “call back” almost never do, and we can’t call them. Climb down this ladder one rung at a time. Every rung is still a yes on this call.</p></div>` +
@@ -3499,6 +3550,7 @@ function setView(v){
   if(v==="rapport") renderRapport();
   if(v==="stats") renderStats();
   if(v==="flow") renderFlow();
+  if(v==="grid") renderGrid();
   window.scrollTo(0,0);
 }
 document.addEventListener("click", e => {
@@ -3539,6 +3591,16 @@ window.addEventListener("hashchange", ()=>{ const id=location.hash.slice(1); if(
 /* Back-to-top button for long pages on phones */
 addEventListener("scroll", () => { const b = document.getElementById("toTop"); if(b) b.classList.toggle("show", scrollY > 700); }, {passive:true});
 document.addEventListener("click", e => { if(e.target.id==="toTop") window.scrollTo({top:0, behavior:"smooth"}); });
+
+/* Local time clock */
+function tickClock(){
+  const el = document.getElementById("localClock");
+  if(!el) return;
+  const now = new Date();
+  el.textContent = now.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"}) + " local";
+}
+tickClock();
+setInterval(tickClock, 1000);
 
 /* Init */
 renderCats(); syncTier(); renderFlow(); renderFacts();
