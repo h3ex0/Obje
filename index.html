@@ -3774,13 +3774,14 @@ async function wikiPlaces(lat, lon){
 
 /* ===================== RAPPORT BY ZIP 2 =====================
    Same lookups as "Rapport by zip" (zippopotam.us, open-meteo.com,
-   nominatim.openstreetmap.org, en.wikipedia.org), but able to reach them
-   through the IT-approved Google-hosted lookup service (see
-   /rapport-lookup-service in this repo) instead of calling each one
-   directly. Leave the address blank to use direct lookups, same as the
-   original tab. */
+   nominatim.openstreetmap.org, en.wikipedia.org), but reached through the
+   IT-approved Google-hosted lookup service (see /rapport-lookup-service in
+   this repo) deployed below, instead of calling each one directly. Already
+   wired in — no setup needed to use this tab. The address can still be
+   changed or cleared below if the deployment is ever replaced. */
 const RAPPORT_CACHE2 = {};
-function lookupServiceUrl(){ return (store.get("rapportLookupService","")||"").trim(); }
+const DEFAULT_LOOKUP_SERVICE = "https://script.google.com/macros/s/AKfycbxwjxpmkabLLwvdwAyJdiwGFCt_Lh7UFn2EQ2y8NK_PkR8nnp09dvMvdjWgU7ypnHozhA/exec";
+function lookupServiceUrl(){ return (store.get("rapportLookupService", DEFAULT_LOOKUP_SERVICE)||"").trim(); }
 function viaLookupService(url){
   const base = lookupServiceUrl();
   if(!base) return url;
@@ -3958,11 +3959,12 @@ function renderRapport2(){
   const saved = lookupServiceUrl();
   $("#rapport2").innerHTML = `
    <div class="card"><h2>Rapport by zip 2</h2>
-    <p class="note" style="margin-top:0">Same tool as “Rapport by zip” — same data, same ready-to-say lines. This version can reach the lookup data through the IT-approved Google-hosted lookup service below, if your station is set up to use it.</p>
+    <p class="note" style="margin-top:0">Same tool as “Rapport by zip” — same data, same ready-to-say lines. Nothing to set up, just type a zip and look it up.</p>
     <div class="zip-row"><input id="zipIn2" inputmode="numeric" maxlength="5" placeholder="e.g. 78701" autocomplete="off"><button class="pbtn" id="zipGo2">Look up</button></div>
    </div>
-   <div class="card"><h3>Lookup service (optional, one-time per station)</h3>
-    <p class="note" style="margin-top:0">Leave this blank to look things up directly, same as the other tab. The <code>/rapport-lookup-service</code> folder in this repo has the address to use and how it's deployed on Google's platform — ask your lead or IT for the address if your station is already set up for it.</p>
+   <details class="card">
+    <summary style="cursor:pointer;font-weight:700">Advanced: lookup service address (IT use)</summary>
+    <p class="note">Already set to the deployed Google-hosted lookup service — nothing to do here normally. Only touch this if the deployment is replaced or needs to be swapped back to direct lookups.</p>
     <div class="zip-row">
       <input id="lookupSvcIn" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" style="flex:1 1 320px" value="${esc(saved)}">
       <button class="btn" id="lookupSvcSaveBtn">Save</button>
@@ -3970,7 +3972,7 @@ function renderRapport2(){
       <button class="btn" id="lookupSvcClearBtn">Clear</button>
     </div>
     <p class="note" id="lookupTestOut" style="margin:10px 0 0"></p>
-   </div>
+   </details>
    <div class="card"><h3>How to use it without sounding like a tour guide</h3><ul class="dont" style="margin:0">
     <li><b>One line, then a question about them.</b> “How long have you been in Austin?” beats a list of facts.</li>
     <li><b>Never pretend you’ve been there</b> or that you’re local. Curiosity is more believable than fake familiarity.</li>
