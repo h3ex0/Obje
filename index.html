@@ -3809,11 +3809,11 @@ async function citySummary2(city, state){
   return {extract:pg.extract};
 }
 async function wikiPlaces2(lat, lon){
-  const g = await fetchJSON2(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=150&format=json&origin=*`);
+  const g = await fetchJSON2(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lon}&gsradius=10000&gslimit=150&format=json&origin=*`);
   const ids = g.query.geosearch.map(x=>x.pageid);
   const out = [];
   for(let i=0; i<ids.length; i+=50){
-    let j; try{ j = await fetchJSON2(`https://en.wikipedia.org/w/api.php?action=query&pageids=${ids.slice(i,i+50).join("|")}&prop=pageviews|description&pvipdays=30&format=json&origin=*`); }catch(e){ continue; }
+    let j; try{ j = await fetchJSON2(`https://en.wikipedia.org/w/api.php?action=query&pageids=${ids.slice(i,i+50).join("%7C")}&prop=pageviews%7Cdescription&pvipdays=30&format=json&origin=*`); }catch(e){ continue; }
     for(const pg of Object.values(j.query.pages||{})){
       const views = Object.values(pg.pageviews||{}).reduce((a,b)=>a+(b||0),0);
       out.push({ title:pg.title, desc:pg.description||"", views });
@@ -3842,15 +3842,16 @@ async function rapportLookup2(zip){
     wikiChain
   ]);
   const res = { ...base, errors:[] };
-  if(wx.status==="fulfilled"){ const c = wx.value.current; res.weather = { temp:Math.round(c.temperature_2m), cond:WMO[c.weather_code]||"", time:c.time, tz:wx.value.timezone }; } else res.errors.push("weather");
-  if(wiki.status==="fulfilled") res.summary = wiki.value.extract; else res.errors.push("city summary");
-  if(places.status==="fulfilled") res.places = places.value; else res.errors.push("landmarks");
+  const why = reason => (reason && reason.message) ? reason.message : "failed";
+  if(wx.status==="fulfilled"){ const c = wx.value.current; res.weather = { temp:Math.round(c.temperature_2m), cond:WMO[c.weather_code]||"", time:c.time, tz:wx.value.timezone }; } else res.errors.push("weather ("+why(wx.reason)+")");
+  if(wiki.status==="fulfilled") res.summary = wiki.value.extract; else res.errors.push("city summary ("+why(wiki.reason)+")");
+  if(places.status==="fulfilled") res.places = places.value; else res.errors.push("landmarks ("+why(places.reason)+")");
   if(food.status==="fulfilled"){
     const seen = new Set();
     res.local = food.value.filter(x=>x.name && !seen.has(x.name) && seen.add(x.name))
       .map(x=>({ name:x.name, cuisine:(x.extratags&&x.extratags.cuisine||"").replace(/;/g,", ").replace(/_/g," "), chain:!!(x.extratags&&(x.extratags.brand||x.extratags["brand:wikidata"])) }))
       .sort((a,b)=>a.chain-b.chain).slice(0,12);
-  } else res.errors.push("nearby restaurants");
+  } else res.errors.push("nearby restaurants ("+why(food.reason)+")");
   if(!res.errors.length) RAPPORT_CACHE2[zip] = res;
   return res;
 }
