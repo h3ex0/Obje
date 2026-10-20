@@ -47,11 +47,8 @@ header{position:sticky;top:0;z-index:10;background:var(--panel);border-bottom:1p
 .seg-label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .theme{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:13px}
 .clock{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;padding:5px 2px}
-.gate{max-width:360px;margin:60px auto;text-align:center}
-.gate input[type=password]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);font-size:16px;margin:12px 0}
-.gate .err{color:var(--bad);font-size:13px;min-height:18px;margin-top:6px}
-.gate button{width:100%}
 main{max-width:1500px;margin:0 auto;padding:16px}
+.credit{text-align:center;padding:18px 16px 28px;color:var(--muted);font-size:12.5px}
 .view{display:none}.view.on{display:block}
 /* Objections layout */
 .ob-grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
@@ -91,8 +88,6 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04
 .copy.done{color:var(--ok);border-color:var(--ok)}
 .ph{background:var(--ph);color:var(--ph-ink);border-radius:4px;padding:0 3px;font-weight:600}
 .vf{background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:0 4px;font-size:12px;font-weight:700;overflow-wrap:anywhere;-webkit-box-decoration-break:clone;box-decoration-break:clone}
-.ok-text{color:var(--ok);font-weight:700}
-.bad-text{color:var(--bad);font-weight:700}
 .qa{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin-bottom:12px}
 .qa .q{font-weight:700;margin-bottom:3px}
 .qa .a{font-size:15.5px}
@@ -288,11 +283,9 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
       <button class="tab" role="tab" data-view="scen" aria-selected="false" data-tv-only="1">Live scenarios</button>
       <button class="tab" role="tab" data-view="flow" aria-selected="false" data-tv-only="1">Call flow</button>
       <button class="tab" role="tab" data-view="rapport" aria-selected="false" data-tv-only="1">Rapport by zip</button>
-      <button class="tab" role="tab" data-view="rapport2" aria-selected="false" data-tv-only="1">Rapport by zip 2</button>
       <button class="tab" role="tab" data-view="lock" aria-selected="false" data-tv-only="1">Lock-in</button>
       <button class="tab" role="tab" data-view="facts" aria-selected="false">Quick facts</button>
       <button class="tab" role="tab" data-view="stats" aria-selected="false">My stats</button>
-      <button class="tab" role="tab" data-view="grid" aria-selected="false">Quick Grid 🔒</button>
     </div>
     <span class="clock" id="localClock" title="Local time"></span>
     <div class="search">
@@ -337,18 +330,13 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
   <!-- RAPPORT -->
   <section class="view" id="view-rapport"><div class="wrap" id="rapport"></div></section>
 
-  <!-- RAPPORT BY ZIP 2 (proxy-capable, for stations where direct lookups get blocked) -->
-  <section class="view" id="view-rapport2"><div class="wrap" id="rapport2"></div></section>
-
   <!-- MY STATS -->
   <section class="view" id="view-stats"><div class="wrap" id="stats"></div></section>
 
   <!-- LOCK-IN -->
   <section class="view" id="view-lock"><div class="wrap" id="lock"></div></section>
-
-  <!-- QUICK GRID (password-gated) -->
-  <section class="view" id="view-grid"><div class="wrap" id="grid"></div></section>
 </main>
+<footer class="credit">Created by Zaki</footer>
 <button class="totop" id="toTop" aria-label="Back to top">↑</button>
 
 <script>
@@ -3664,49 +3652,6 @@ function pathBackText(){
   const name = d("name") || "{your name}", num = d("num") || "{number}", day = d("day") || "{day}", time = d("time") || "{time}", bring = d("bring") || "{card, ID, spouse}";
   return `If you truly have to go, here’s the plan so this doesn’t fall through the cracks: on ${day} at ${time}, you call ${num} and ask for ${name}. Have ${bring} with you. It takes about ten minutes. Would you set a reminder on your phone right now while I’m on the line?`;
 }
-/* ===================== QUICK GRID (password-gated) ===================== */
-const GRID_PASSWORD = "Black@0712@Panther";
-function gridUnlocked(){ try{ return sessionStorage.getItem("op_grid_unlocked")==="1"; }catch(e){ return false; } }
-function renderGrid(){
-  if(!gridUnlocked()){
-    $("#grid").innerHTML = `<div class="gate">
-      <h2>Quick Grid is locked</h2>
-      <p class="note">Enter the password to view the objection quick-reference grid.</p>
-      <input type="password" id="gridPw" placeholder="Password" autocomplete="off">
-      <div class="err" id="gridErr"></div>
-      <button class="pbtn" id="gridUnlockBtn">Unlock</button>
-    </div>`;
-    const tryUnlock = () => {
-      const val = $("#gridPw").value;
-      if(val === GRID_PASSWORD){
-        try{ sessionStorage.setItem("op_grid_unlocked","1"); }catch(e){}
-        renderGrid();
-      } else {
-        $("#gridErr").textContent = "Wrong password.";
-        $("#gridPw").value = "";
-        $("#gridPw").focus();
-      }
-    };
-    $("#gridUnlockBtn").addEventListener("click", tryUnlock);
-    $("#gridPw").addEventListener("keydown", e => { if(e.key==="Enter") tryUnlock(); });
-    $("#gridPw").focus();
-    return;
-  }
-  const cm = catsFor(state.product);
-  const cards = Object.entries(cm).map(([key,label])=>{
-    const items = O.filter(o=>o.product===state.product && o.cat===key);
-    const trs = items.map(o=>{
-      const line = (o.scripts && o.scripts[0]) ? o.scripts[0][1] : (o.goal || "");
-      const short = line.length>130 ? line.slice(0,127)+"…" : line;
-      return `<tr><td><a href="#${o.id}" data-id="${o.id}">${esc(o.title)}</a>${o.hot?' <span class="badge hot">Hot</span>':""}</td><td>${fmt(short)}</td></tr>`;
-    }).join("");
-    return `<div class="card"><h2>${esc(label)}</h2><div class="tbl-wrap"><table><thead><tr><th>Trigger</th><th>Lead-in response</th></tr></thead><tbody>${trs}</tbody></table></div></div>`;
-  }).join("");
-  const prodLabel = state.product==="tv" ? "TV" : "Internet";
-  $("#grid").innerHTML = `<div class="card"><h2>Objection quick-reference grid — ${prodLabel}</h2><p class="note" style="margin:0">Click any row to jump to its full detail. <button class="pbtn ghost" id="gridLockBtn" style="margin-left:8px;width:auto;padding:4px 10px;font-size:12px">Lock again</button></p></div>` + cards;
-  const lockBtn = $("#gridLockBtn");
-  if(lockBtn) lockBtn.addEventListener("click", () => { try{ sessionStorage.removeItem("op_grid_unlocked"); }catch(e){} renderGrid(); });
-}
 function renderLock(){
   const t = state.tier;
   $("#lock").innerHTML = `<div class="card"><h2>Lock it in on this call</h2><p class="note" style="margin:0">Customers who leave to “call back” almost never do, and we can’t call them. Climb down this ladder one rung at a time. Every rung is still a yes on this call.</p></div>` +
@@ -3821,103 +3766,6 @@ async function wikiPlaces(lat, lon){
   return cats;
 }
 
-/* ===================== RAPPORT BY ZIP 2 =====================
-   Same lookups as "Rapport by zip", but every request can be routed through an
-   optional proxy URL (a small Google Apps Script Web App — see /rapport-proxy in
-   this repo) instead of calling zippopotam/open-meteo/nominatim/wikipedia directly.
-   Use this where "Rapport by zip" gets HTTP 403s — that's almost always a network
-   policy blocking one of those specific domains at that station, not a bug in the
-   tool, and routing through a single Google-hosted endpoint works around it without
-   needing every individual domain allow-listed. */
-const RAPPORT_CACHE2 = {};
-function proxyUrl(){ return (store.get("rapportProxy","")||"").trim(); }
-function viaProxy(url){
-  const base = proxyUrl();
-  if(!base) return url;
-  return base + (base.includes("?") ? "&" : "?") + "url=" + encodeURIComponent(url);
-}
-function fetchOnce2(url, ms){
-  const c = new AbortController(); const t = setTimeout(()=>c.abort(), ms||12000);
-  return fetch(viaProxy(url), {signal:c.signal}).then(async r => {
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    const j = await r.json();
-    if(j && j.__proxyError) throw new Error("HTTP "+(j.upstreamStatus||"?")+(j.message?": "+j.message:""));
-    return j;
-  }).finally(()=>clearTimeout(t));
-}
-async function fetchJSON2(url, ms){
-  try{ return await fetchOnce2(url, ms); }
-  catch(e){ if(/HTTP 404/.test(e.message)) throw e; await new Promise(r=>setTimeout(r,800)); return fetchOnce2(url, ms); }
-}
-async function citySummary2(city, state){
-  try{
-    const s = await fetchJSON2(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent((city+", "+state).replace(/ /g,"_"))}`);
-    if(s.type!=="disambiguation" && s.extract) return {extract:s.extract};
-  }catch(e){}
-  const j = await fetchJSON2(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(city+", "+state)}&redirects=1&prop=extracts&exintro=1&explaintext=1&format=json&origin=*`);
-  const pg = Object.values(j.query.pages)[0];
-  if(!pg || pg.missing!==undefined || !pg.extract) throw new Error("no summary");
-  return {extract:pg.extract};
-}
-async function wikiPlaces2(lat, lon){
-  const g = await fetchJSON2(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=150&format=json&origin=*`);
-  const ids = g.query.geosearch.map(x=>x.pageid);
-  const out = [];
-  for(let i=0; i<ids.length; i+=50){
-    let j; try{ j = await fetchJSON2(`https://en.wikipedia.org/w/api.php?action=query&pageids=${ids.slice(i,i+50).join("|")}&prop=pageviews|description&pvipdays=30&format=json&origin=*`); }catch(e){ continue; }
-    for(const pg of Object.values(j.query.pages||{})){
-      const views = Object.values(pg.pageviews||{}).reduce((a,b)=>a+(b||0),0);
-      out.push({ title:pg.title, desc:pg.description||"", views });
-    }
-  }
-  const cats = {food:[], fun:[], land:[]};
-  for(const p of out.sort((a,b)=>b.views-a.views)){
-    const txt = p.title+" "+p.desc;
-    if(R_SKIP.test(p.desc) || R_EVENT.test(txt) || /^\d{4}\b/.test(p.title)) continue;
-    const c = R_CATS.find(c=>c.re.test(txt));
-    if(c && cats[c.k].length < 8) cats[c.k].push(p);
-  }
-  return cats;
-}
-async function rapportLookup2(zip){
-  if(RAPPORT_CACHE2[zip]) return RAPPORT_CACHE2[zip];
-  if(RAPPORT_CACHE[zip]) return RAPPORT_CACHE[zip];
-  const z = await fetchJSON2("https://api.zippopotam.us/us/"+zip, 10000);
-  const p = z.places[0];
-  const base = { zip, city:p["place name"], state:z.places[0].state, st:p["state abbreviation"], lat:+p.latitude, lon:+p.longitude, other:z.places.slice(1).map(x=>x["place name"]) };
-  const settle = p => p.then(value=>({status:"fulfilled", value}), reason=>({status:"rejected", reason}));
-  const wikiChain = (async () => { const a = await settle(citySummary2(base.city, base.state)); const b = await settle(wikiPlaces2(base.lat, base.lon)); return [a, b]; })();
-  const [wx, food, [wiki, places]] = await Promise.all([
-    settle(fetchJSON2(`https://api.open-meteo.com/v1/forecast?latitude=${base.lat}&longitude=${base.lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=auto`)),
-    settle(fetchJSON2(`https://nominatim.openstreetmap.org/search?q=restaurant&format=jsonv2&limit=30&extratags=1&bounded=1&viewbox=${base.lon-0.06},${base.lat+0.045},${base.lon+0.06},${base.lat-0.045}`)),
-    wikiChain
-  ]);
-  const res = { ...base, errors:[] };
-  if(wx.status==="fulfilled"){ const c = wx.value.current; res.weather = { temp:Math.round(c.temperature_2m), cond:WMO[c.weather_code]||"", time:c.time, tz:wx.value.timezone }; } else res.errors.push("weather ("+(wx.reason&&wx.reason.message||"failed")+")");
-  if(wiki.status==="fulfilled") res.summary = wiki.value.extract; else res.errors.push("city summary");
-  if(places.status==="fulfilled") res.places = places.value; else res.errors.push("landmarks");
-  if(food.status==="fulfilled"){
-    const seen = new Set();
-    res.local = food.value.filter(x=>x.name && !seen.has(x.name) && seen.add(x.name))
-      .map(x=>({ name:x.name, cuisine:(x.extratags&&x.extratags.cuisine||"").replace(/;/g,", ").replace(/_/g," "), chain:!!(x.extratags&&(x.extratags.brand||x.extratags["brand:wikidata"])) }))
-      .sort((a,b)=>a.chain-b.chain).slice(0,12);
-  } else res.errors.push("nearby restaurants ("+(food.reason&&food.reason.message||"failed")+")");
-  if(!res.errors.length) RAPPORT_CACHE2[zip] = res;
-  return res;
-}
-async function testRapportProxy(){
-  const out = $("#proxyTestOut"); if(!out) return;
-  out.textContent = "Testing…";
-  const usingProxy = !!proxyUrl();
-  const t0 = performance.now();
-  try{
-    await fetchJSON2("https://api.zippopotam.us/us/10001", 10000);
-    out.innerHTML = `<span class="ok-text">Success</span> — reached the lookup service ${usingProxy?"through the proxy":"directly"} in ${Math.round(performance.now()-t0)}ms.`;
-  }catch(e){
-    out.innerHTML = `<span class="bad-text">Failed</span> — ${usingProxy?"the proxy":"a direct call"} could not reach the lookup service: ${esc(e.message)}.${usingProxy?"":" Try setting up the proxy below."}`;
-  }
-}
-
 const cleanTitle = t => String(t).replace(/\s*\([^)]*\)\s*$/,"");
 function partOfDay(localIso){
   const h = +String(localIso||"").slice(11,13);
@@ -3943,8 +3791,8 @@ function rapportLines(r){
   return L.map(l=>[l[0], l[1], kinds[l[0]][0], {city:r.city, place:kinds[l[0]][1]||""}]);
 }
 
-function renderRapportResult(r, boxId){
-  const box = $("#"+(boxId||"rapportOut")); if(!box) return;
+function renderRapportResult(r){
+  const box = $("#rapportOut"); if(!box) return;
   const list = (arr, empty) => arr && arr.length ? `<ol class="rlist">${arr.map((p,i)=>`<li><b>${esc(cleanTitle(p.title))}</b>${i<2&&p.views>300?' <span class="badge tier">best-known</span>':""}<span class="ql">${esc(p.desc)}</span></li>`).join("")}</ol>` : `<p class="note">${empty}</p>`;
   const pod = r.weather ? partOfDay(r.weather.time) : "";
   box.innerHTML = `
@@ -3961,7 +3809,7 @@ function renderRapportResult(r, boxId){
     <div class="card"><h3>${R_CATS[2].t}</h3>${list(r.places&&r.places.land,"Nothing listed nearby.")}</div>
    </div>
    <div class="card"><h3>Everyday restaurants nearby (map data, not ranked)</h3>${r.local&&r.local.length?`<div class="says">${r.local.map(x=>`<span>${esc(x.name)}${x.cuisine?` <span class="ql" style="display:inline">· ${esc(x.cuisine)}</span>`:""}${x.chain?' <span class="ql" style="display:inline">· chain</span>':""}</span>`).join("")}</div>`:`<p class="note">None found.</p>`}</div>
-   ${r.errors.length?`<div class="card"><p class="note" style="margin:0 0 8px">Couldn’t load: ${esc(r.errors.join(", "))}. The free services sometimes throttle for a few seconds, or your network may be blocking one of them. The rest still works.</p><button class="pbtn ghost" data-retry="${boxId||'rapportOut'}">Try again</button></div>`:""}
+   ${r.errors.length?`<div class="card"><p class="note" style="margin:0 0 8px">Couldn’t load: ${esc(r.errors.join(", "))}. The free services sometimes throttle for a few seconds. The rest still works.</p><button class="pbtn ghost" id="zipRetry">Try again</button></div>`:""}
    <p class="note">Ranking: famous places are ordered by Wikipedia reads over the last 30 days, which measures how well-known a place is, not how good it is. Sources: zippopotam.us, Open-Meteo, Wikipedia, OpenStreetMap Nominatim.</p>`;
 }
 
@@ -3991,60 +3839,8 @@ function renderRapport(){
    <div id="rapportOut"></div>`;
   if(rapportLast) renderRapportResult(rapportLast);
 }
-
-let rapportLast2 = null;
-async function runRapport2(){
-  const input = $("#zipIn2"); const zip = (input.value||"").trim();
-  const box = $("#rapportOut2");
-  if(!/^\d{5}$/.test(zip)){ box.innerHTML = `<div class="card"><p class="note" style="margin:0">Enter a 5-digit US zip code.</p></div>`; return; }
-  box.innerHTML = `<div class="card"><p class="note" style="margin:0">Looking up ${esc(zip)}${proxyUrl()?" through the proxy":""}…</p></div>`;
-  try{ rapportLast2 = await rapportLookup2(zip); renderRapportResult(rapportLast2, "rapportOut2"); }
-  catch(e){ box.innerHTML = `<div class="card"><p class="note" style="margin:0">${/HTTP 404/.test(e.message)?`${esc(zip)} isn’t a known US zip code. Double-check it with the customer.`:`Couldn’t reach the lookup service (${esc(e.message)}).${proxyUrl()?" The proxy itself may be down or misconfigured — try Test Connection below.":" Try setting up the proxy below, or check the internet connection."}`}</p></div>`; }
-}
-
-function renderRapport2(){
-  if($("#rapport2").dataset.ready) return;
-  $("#rapport2").dataset.ready = "1";
-  const savedProxy = proxyUrl();
-  $("#rapport2").innerHTML = `
-   <div class="card"><h2>Rapport by zip 2</h2>
-    <p class="note" style="margin-top:0">Same tool as “Rapport by zip” — same data, same ready-to-say lines. Use this one if the other tab gives you an HTTP 403 or “couldn’t reach the lookup service” at your station. That almost always means your network is blocking one of the lookup services, not that anything is broken. This version can route every lookup through a single proxy address instead, which many networks that block the individual services still allow through.</p>
-    <div class="zip-row"><input id="zipIn2" inputmode="numeric" maxlength="5" placeholder="e.g. 78701" autocomplete="off"><button class="pbtn" id="zipGo2">Look up</button></div>
-   </div>
-   <div class="card"><h3>Proxy setup (one-time, per station — ask your lead or IT)</h3>
-    <p class="note" style="margin-top:0">Leave this blank to use direct lookups, same as the other tab. If those are blocked here, someone with a Google account deploys a small, free Google Apps Script (the <code>/rapport-proxy</code> folder in this repo has the exact code and steps) and pastes the resulting web app address below. It only has to be done once per station/network — not once per rep, and not every shift.</p>
-    <div class="zip-row">
-      <input id="proxyUrlIn" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" style="flex:1 1 320px" value="${esc(savedProxy)}">
-      <button class="btn" id="proxySaveBtn">Save</button>
-      <button class="btn" id="proxyTestBtn">Test connection</button>
-      <button class="btn" id="proxyClearBtn">Clear</button>
-    </div>
-    <p class="note" id="proxyTestOut" style="margin:10px 0 0"></p>
-   </div>
-   <div class="card"><h3>How to use it without sounding like a tour guide</h3><ul class="dont" style="margin:0">
-    <li><b>One line, then a question about them.</b> “How long have you been in Austin?” beats a list of facts.</li>
-    <li><b>Never pretend you’ve been there</b> or that you’re local. Curiosity is more believable than fake familiarity.</li>
-    <li><b>Skip it if they’re in a hurry</b> or already annoyed. Rapport that delays them hurts.</li>
-    <li><b>Say “best-known”, not “best”.</b> The ranking measures fame, not quality.</li>
-    <li><b>If they deflect, follow them.</b> “So what’s the plan?” means they’re uncomfortable with small talk. Drop it and keep the rapport going through the business, using their words.</li></ul></div>
-   <div class="card"><h3>Read their reply</h3>${sentGuideHTML()}</div>
-   <div id="rapportOut2"></div>`;
-  if(rapportLast2) renderRapportResult(rapportLast2, "rapportOut2");
-}
-
-const RETRY_FNS = { rapportOut: () => runRapport(), rapportOut2: () => runRapport2() };
-document.addEventListener("click", e => {
-  if(e.target.id==="zipGo") runRapport();
-  if(e.target.id==="zipGo2") runRapport2();
-  if(e.target.id==="proxySaveBtn"){ store.set("rapportProxy", ($("#proxyUrlIn").value||"").trim()); $("#proxyTestOut").textContent = "Saved."; }
-  if(e.target.id==="proxyClearBtn"){ store.set("rapportProxy",""); $("#proxyUrlIn").value=""; $("#proxyTestOut").textContent = "Cleared — using direct lookups again."; }
-  if(e.target.id==="proxyTestBtn") testRapportProxy();
-  const retry = e.target.closest("[data-retry]"); if(retry){ (RETRY_FNS[retry.dataset.retry]||runRapport)(); }
-});
-document.addEventListener("keydown", e => {
-  if(e.target.id==="zipIn" && e.key==="Enter") runRapport();
-  if(e.target.id==="zipIn2" && e.key==="Enter") runRapport2();
-});
+document.addEventListener("click", e => { if(e.target.id==="zipGo" || e.target.id==="zipRetry") runRapport(); });
+document.addEventListener("keydown", e => { if(e.target.id==="zipIn" && e.key==="Enter") runRapport(); });
 
 /* ===================== SENTIMENT-AWARE REPLIES ===================== */
 /* How the customer answers a rapport line tells you how they want the call to go. */
@@ -4218,10 +4014,8 @@ function setView(v){
   if(v==="lock") renderLock();
   if(v==="scen") renderScenarios();
   if(v==="rapport") renderRapport();
-  if(v==="rapport2") renderRapport2();
   if(v==="stats") renderStats();
   if(v==="flow") renderFlow();
-  if(v==="grid") renderGrid();
   if(v==="facts") renderFacts();
   window.scrollTo(0,0);
 }
@@ -4247,7 +4041,6 @@ function setProduct(p){
   renderList();
   renderHome();
   renderFacts();
-  renderGrid();
   try{ history.replaceState(null,"",location.pathname); }catch(e){}
 }
 document.addEventListener("click", e => {
