@@ -288,7 +288,7 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
       <button class="tab" role="tab" data-view="facts" aria-selected="false">Quick facts</button>
       <button class="tab" role="tab" data-view="stats" aria-selected="false">My stats</button>
     </div>
-    <span class="clock" id="localClock" title="Local time"></span>
+    <span class="clock" id="localClock" title="Cairo time"></span>
     <div class="search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="Type what the customer said… (e.g. “paid on the 1st”)" autocomplete="off">
@@ -4214,12 +4214,12 @@ window.addEventListener("hashchange", ()=>{ const id=location.hash.slice(1); if(
 addEventListener("scroll", () => { const b = document.getElementById("toTop"); if(b) b.classList.toggle("show", scrollY > 700); }, {passive:true});
 document.addEventListener("click", e => { if(e.target.id==="toTop") window.scrollTo({top:0, behavior:"smooth"}); });
 
-/* Local time clock */
+/* Cairo clock — the customer's own local time is already handled per lookup in the Rapport tabs; this is just the office clock. */
 function tickClock(){
   const el = document.getElementById("localClock");
   if(!el) return;
   const now = new Date();
-  el.textContent = now.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"}) + " local";
+  el.textContent = now.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit", timeZone:"Africa/Cairo"}) + " Cairo";
 }
 tickClock();
 setInterval(tickClock, 1000);
