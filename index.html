@@ -277,12 +277,16 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
 <header>
   <div class="bar">
     <div class="brand">Objection Playbook</div>
+    <div class="seg" id="productSeg" role="tablist" aria-label="Product">
+      <button data-product="tv" aria-pressed="true">📺 TV</button>
+      <button data-product="internet" aria-pressed="false">🛰️ Internet</button>
+    </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-view="obj" aria-selected="true">Objections</button>
-      <button class="tab" role="tab" data-view="scen" aria-selected="false">Live scenarios</button>
-      <button class="tab" role="tab" data-view="flow" aria-selected="false">Call flow</button>
-      <button class="tab" role="tab" data-view="rapport" aria-selected="false">Rapport by zip</button>
-      <button class="tab" role="tab" data-view="lock" aria-selected="false">Lock-in</button>
+      <button class="tab" role="tab" data-view="scen" aria-selected="false" data-tv-only="1">Live scenarios</button>
+      <button class="tab" role="tab" data-view="flow" aria-selected="false" data-tv-only="1">Call flow</button>
+      <button class="tab" role="tab" data-view="rapport" aria-selected="false" data-tv-only="1">Rapport by zip</button>
+      <button class="tab" role="tab" data-view="lock" aria-selected="false" data-tv-only="1">Lock-in</button>
       <button class="tab" role="tab" data-view="facts" aria-selected="false">Quick facts</button>
       <button class="tab" role="tab" data-view="stats" aria-selected="false">My stats</button>
       <button class="tab" role="tab" data-view="grid" aria-selected="false">Quick Grid 🔒</button>
@@ -293,12 +297,14 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
       <input id="q" type="search" placeholder="Type what the customer said… (e.g. “paid on the 1st”)" autocomplete="off">
       <span class="kbd">/</span>
     </div>
-    <span class="seg-label">Tier</span>
-    <div class="seg" id="tierSeg">
-      <button data-tier="all" aria-pressed="true">All</button>
-      <button data-tier="ep" aria-pressed="false">Elite / Plus</button>
-      <button data-tier="f24" aria-pressed="false">Flex24</button>
-      <button data-tier="ftv" aria-pressed="false">FlexTV</button>
+    <div id="tierWrap" style="display:flex;align-items:center;gap:8px">
+      <span class="seg-label">Tier</span>
+      <div class="seg" id="tierSeg">
+        <button data-tier="all" aria-pressed="true">All</button>
+        <button data-tier="ep" aria-pressed="false">Elite / Plus</button>
+        <button data-tier="f24" aria-pressed="false">Flex24</button>
+        <button data-tier="ftv" aria-pressed="false">FlexTV</button>
+      </div>
     </div>
     <button class="theme" id="themeBtn" title="Toggle light/dark">◐</button>
   </div>
@@ -341,7 +347,7 @@ ul.verify li{background:var(--warn-soft);color:var(--warn);border-radius:8px;pad
 
 <script>
 /* ===================== DATA ===================== */
-const CATS = {
+const CATS_TV = {
   open:  "Opening & call types",
   info:  "Info & credit",
   money: "Money & payment",
@@ -350,11 +356,22 @@ const CATS = {
   trust: "Trust & history",
   close: "Closing stalls"
 };
+const CATS_INTERNET = {
+  basics:  "What even is this?",
+  setup:   "Setup, equipment & install",
+  money:   "Price, billing & contract",
+  reliability: "Will it actually work?",
+  compat:  "My devices, email & the grandkids",
+  trust:   "Is this safe / is it a scam?",
+  close:   "Closing stalls"
+};
+const CATS_BY_PRODUCT = { tv: CATS_TV, internet: CATS_INTERNET };
+function catsFor(p){ return CATS_BY_PRODUCT[p] || CATS_TV; }
 const TIERS = {all:"All tiers", ep:"Elite / Plus", f24:"Flex24", ftv:"FlexTV"};
 
 /* Script: [label, text, tier]. Placeholders in {braces}. [VERIFY ...] gets highlighted. */
 const O = [];
-function add(o){ O.push(o); }
+function add(o){ o.product = o.product || "tv"; O.push(o); }
 
 /* ---------- OPENING & CALL TYPES ---------- */
 add({id:"price-first", cat:"open", hot:true, title:"“Just give me the price”",
@@ -2773,6 +2790,442 @@ Object.assign(PUSH, {
  ]
 });
 
+/* ===================== INTERNET (STARLINK) DATA ===================== */
+/* Written for first-time, non-technical, often senior customers. Assume nothing is obvious. */
+
+add({id:"what-is-starlink", cat:"basics", hot:true, product:"internet", title:"“What is Starlink? Is this the same as my TV dish?”",
+ sub:"The #1 source of confusion when the same company sells both",
+ say:["What is Starlink?","Is this the same dish as my TV?","Is this a TV thing or an internet thing?","So this goes with my TV dish?","I already have a dish on my roof"],
+ goal:"Separate it from the TV dish in one sentence, then explain what it actually is in plain words.",
+ scripts:[
+  ["Main","Great question — this is a different thing from your TV dish. Starlink is internet that comes from small satellites instead of a cable in the ground. It's a separate little dish, about the size of a laptop, that gives your home internet instead of TV channels."],
+  ["If they still look confused","Think of it like this: your TV dish brings you channels. This new dish brings you internet — the thing that lets you use email, look things up, and video call your grandkids."]
+ ],
+ rel:["what-is-internet","dish-on-roof"]
+});
+
+add({id:"what-is-internet", cat:"basics", hot:true, product:"internet", title:"“What is internet, really? Why would I need it?”",
+ sub:"Genuinely doesn't know what it's for",
+ say:["What is internet?","What do I even need this for?","What does internet do?","I don't use a computer, why would I need this?"],
+ goal:"Explain it in terms of things they already want to do, not technical terms.",
+ scripts:[["Main","Internet is what lets a device send and get information — it's how you'd send an email, look up a phone number or recipe, see photos your family sends you, or talk face-to-face on a video call with your grandkids even if they live far away. You don't need to understand how it works to use it, same as you don't need to know how the phone company works to make a call."]],
+ rel:["need-computer","inet-facetime-grandkids"]
+});
+
+add({id:"need-computer", cat:"basics", hot:true, product:"internet", title:"“Do I need a computer?”",
+ sub:"Assumes a computer is required",
+ say:["Do I need a computer?","I don't have a computer","I don't know how to use a computer","Can I use it without a computer?"],
+ goal:"No — a phone, tablet, or smart TV works too. Remove the barrier immediately.",
+ scripts:[["Main","No computer required. It works with whatever you already have — a cell phone, a tablet, or a smart TV. If you don't have any of those either, that's okay too; you can still get the service for when you're ready, or for family who visit."]]
+});
+
+add({id:"what-is-wifi", cat:"basics", product:"internet", title:"“What's WiFi? Is that different from internet?”",
+ sub:"Conflates WiFi and internet",
+ say:["What's WiFi?","Is WiFi the same as internet?","Do I need WiFi too?","What's the difference between WiFi and internet?"],
+ goal:"WiFi is just the wireless signal in the house that carries the internet to your devices — no separate purchase.",
+ scripts:[["Main","WiFi is just the name for the wireless signal that carries the internet around your house, so your phone or tablet can use it without a cable. The equipment we set up creates that WiFi signal for you — it's included, not something extra you buy."]]
+});
+
+add({id:"what-is-router", cat:"basics", product:"internet", title:"“What's a router? What's a modem?”",
+ sub:"Doesn't know the hardware vocabulary",
+ say:["What's a router?","What's a modem?","What's the difference between the dish and the router?","Do I need both?"],
+ goal:"Plain-English definition, tied to the physical box they'll actually see.",
+ scripts:[["Main","The router is the box that sits inside your house and spreads the WiFi signal around — think of it like the hub everything connects through. The dish outside talks to the satellites; the router inside talks to your phone, tablet or TV. You'll have both, and they're connected to each other with one cable."]]
+});
+
+add({id:"same-as-phone-data", cat:"basics", product:"internet", title:"“Is this the same as the data on my cell phone?”",
+ sub:"Confuses cellular data with home internet",
+ say:["Isn't this the same as my phone's data?","I already have internet on my phone","Why would I need this if my phone has internet?"],
+ goal:"Explain the difference: phone data is limited and slow for a whole household; this is for the whole home, every device, without using up a phone plan.",
+ scripts:[["Main","Your phone's data is great for one phone, but it usually has a limit, and it can get slow or expensive if you use a lot of it. This is internet for your whole house — every device, as much as you want, without eating into your phone plan. If you've ever run out of data near the end of the month, this is what fixes that."]]
+});
+
+add({id:"replace-phone-line", cat:"basics", product:"internet", title:"“Will this replace my telephone? Do I still need my phone line?”",
+ sub:"Worried about losing phone service",
+ say:["Will I still have my phone?","Does this replace my telephone?","Do I need to keep my landline?","Can I make calls with this?"],
+ goal:"It does not touch their existing phone service unless they ask about it — reassure first.",
+ scripts:[["Main","This is separate from your telephone. It doesn't change or remove your phone service at all. [VERIFY: whether a landline/phone bundle is offered with this internet service — if not, don't imply it is]"]]
+});
+
+add({id:"keep-regular-tv", cat:"basics", product:"internet", title:"“Will I still be able to watch my regular TV?”",
+ sub:"Worried the internet replaces or disrupts TV",
+ say:["Can I still watch my TV?","Does this mess with my TV channels?","Will my TV still work the same?"],
+ goal:"Yes, this doesn't touch their TV service — it's an entirely separate dish and box.",
+ scripts:[["Main","Yes, absolutely — your TV and your channels stay exactly the same. This internet dish is separate equipment that doesn't touch your TV box or your TV dish at all."]]
+});
+
+add({id:"why-tv-company-selling-internet", cat:"basics", product:"internet", title:"“Why is a TV company selling me internet?”",
+ sub:"Suspicious of the cross-sell",
+ say:["Why is my TV company calling about internet?","What does internet have to do with my TV?","Is this some kind of up-sell?"],
+ goal:"Be upfront and honest — this is a real second product, not a trick.",
+ scripts:[["Main","Fair question. We partner with Starlink so customers can get reliable internet the same way they already get their TV from us — one call, one company you already know, instead of juggling a separate internet company. It's a real, separate service, and there's no obligation to add it."]]
+});
+
+add({id:"who-installs", cat:"setup", hot:true, product:"internet", title:"“Who sets it up? Do I have to do it myself?”",
+ sub:"Afraid of a technical DIY project",
+ say:["Who installs it?","Do I have to set it up myself?","Is someone coming to my house?","I'm not good with technology, who does the setup?"],
+ goal:"Clarify exactly who does the physical work before they picture themselves struggling with it alone.",
+ scripts:[["Main","[VERIFY: whether this center sends a professional installer for Starlink, or whether it's self-install with phone/video support]. Either way, you are not left to figure it out alone — someone walks you through every step, or does it for you, so the dish ends up aimed correctly and working before anyone leaves you to it."]],
+ verify:["Whether Starlink install here is professional (technician visit) or customer self-install with guided support"]
+});
+
+add({id:"how-long-install", cat:"setup", product:"internet", title:"“How long does it take to install?”",
+ sub:"Wants a time expectation",
+ say:["How long will this take?","How long is the install?","Will someone be at my house all day?"],
+ goal:"Give an honest estimate; most setups are well under an hour once equipment arrives.",
+ scripts:[["Main","Most setups take under an hour once the equipment is in hand and the dish has a clear view of the sky. [VERIFY current install/ship timeline for this center]"]]
+});
+
+add({id:"dish-on-roof", cat:"setup", product:"internet", title:"“Does the dish go on my roof like my satellite TV dish?”",
+ sub:"Assumes identical placement to TV dish",
+ say:["Does it go on my roof?","Is it the same spot as my TV dish?","Where does this dish go?"],
+ goal:"It just needs a clear view of open sky — roof, pole, deck railing, ground mount, wherever that is.",
+ scripts:[["Main","It doesn't have to go anywhere specific — it just needs a clear, open view of the sky with nothing blocking it, like trees or the edge of the roof. That could be your roof, a pole in the yard, a deck railing, or even propped on the ground to start. It does not need to be anywhere near your TV dish."]]
+});
+
+add({id:"dish-heavy-damage-roof", cat:"setup", product:"internet", title:"“Is the dish heavy? Will it damage my roof?”",
+ sub:"Worried about property damage",
+ say:["Is it heavy?","Will it damage my roof?","Will it leave holes?","Is it going to hurt my house?"],
+ goal:"It's small and light — reassure on weight and mounting options.",
+ scripts:[["Main","It's light — about the size of a laptop standing up, nothing like the TV dish in weight. It can even sit on a stand without being attached to anything. If you do want it mounted permanently, that's a small, simple bracket, not a big installation."]]
+});
+
+add({id:"special-outlet", cat:"setup", product:"internet", title:"“Do I need a special outlet?”",
+ sub:"Worried about electrical requirements",
+ say:["Do I need a special outlet?","Does my house need to be rewired?","Will an electrician need to come?"],
+ goal:"No special wiring — it plugs into a normal wall outlet.",
+ scripts:[["Main","No special outlet needed — it plugs into a regular wall outlet, just like a lamp or a TV. No electrician, no rewiring."]]
+});
+
+add({id:"comes-with-everything", cat:"setup", product:"internet", title:"“Does it come with everything I need, or do I have to buy a router separately?”",
+ sub:"Unsure what's included",
+ say:["Does it come with everything?","Do I need to buy anything extra?","Is the router included?"],
+ goal:"Confirm what's in the box so there's no surprise about missing pieces.",
+ scripts:[["Main","It comes with the dish, the WiFi router, the cables, and the power cord — everything needed to get online is in the box. [VERIFY exact kit contents/model being provided by this center]"]]
+});
+
+add({id:"grandson-setup", cat:"setup", product:"internet", title:"“Can my grandson/son set it up instead of me?”",
+ sub:"Wants someone else to handle the technical part",
+ say:["Can my grandson do it for me?","My son is better with this stuff, can he set it up?","Can someone else do the setup when they visit?"],
+ goal:"Yes — remove the pressure that they personally have to be the one to do it.",
+ scripts:[["Main","Of course — anyone in the family can do the setup, or help you with it. It doesn't have to be you, and it doesn't have to happen the same day it arrives if you'd rather wait for help."]]
+});
+
+add({id:"move-equipment", cat:"setup", product:"internet", title:"“What if I move it to a different spot, will it still work?”",
+ sub:"Worried about being locked into one location",
+ say:["Can I move it later?","What if I want to put it somewhere else?","Can I take it with me if I move houses?"],
+ goal:"Yes, it's portable — as long as it still has a clear sky view.",
+ scripts:[["Main","Yes, you can move it to a different spot on your property, or bring it with you if you move — it just needs that same clear view of the sky wherever it ends up. [VERIFY any process/fee for moving service to a new address]"]]
+});
+
+add({id:"needs-clear-sky", cat:"setup", product:"internet", title:"“Does it need a clear view of the sky? What if I have trees?”",
+ sub:"Worried trees/obstructions will block it",
+ say:["I have a lot of trees, will that be a problem?","Do I need a clear view of the sky?","What if something's blocking it?"],
+ goal:"Be honest that obstructions can cause problems, and that this gets checked before committing.",
+ scripts:[["Main","It works best with an open view of the sky — trees, roof overhangs, or tall buildings can interrupt the signal. Before we finish setting you up, we'll check your specific location so there are no surprises after it's installed."]],
+ dont:["Promising it'll work great in a heavily tree-covered yard without checking"]
+});
+
+add({id:"squirrels-birds-damage", cat:"setup", product:"internet", title:"“Will squirrels or birds damage it?”",
+ sub:"A genuinely common tiny worry",
+ say:["Will squirrels chew on it?","Will birds sit on it and break it?","Do animals mess with it?"],
+ goal:"Light reassurance — it's a sealed, flat panel, not an easy target.",
+ scripts:[["Main","It's a sealed, flat panel sitting on a simple stand, so it's not an easy perch or chew target the way loose wires can be. If it's ever mounted somewhere animals get to it directly, we can talk about a better spot."]]
+});
+
+add({id:"whats-in-the-box", cat:"setup", product:"internet", title:"“What exactly comes in the box?”",
+ sub:"Wants the literal inventory",
+ say:["What's in the box?","What exactly do I get?","What pieces come with it?"],
+ goal:"List it out plainly.",
+ scripts:[["Main","You get the dish itself, a built-in stand so it can sit on the ground or a flat surface to start, the WiFi router, the cable that connects them, and the power cord. [VERIFY exact kit for the model/plan being sold]"]]
+});
+
+add({id:"cable-through-wall", cat:"setup", product:"internet", title:"“Does the cable come inside, or do I need a hole drilled in my wall?”",
+ sub:"Worried about drilling/damage to the home",
+ say:["Do you drill a hole in my house?","How does the cable get inside?","Will there be a hole in my wall?"],
+ goal:"Explain the simplest option first (through a window/door gap), mention drilling is optional, never assumed.",
+ scripts:[["Main","Most of the time the cable can run through a window gap or an existing opening, no drilling needed. If you'd prefer a cleaner, permanent setup with a small cable entry point, that's optional and only happens with your okay — never assumed."]]
+});
+
+add({id:"inet-how-much", cat:"money", hot:true, product:"internet", title:"“How much does it cost a month?”",
+ sub:"The first question almost everyone asks",
+ say:["How much does it cost?","What's the monthly price?","How much is this a month?","What am I paying for this?"],
+ goal:"Give the honest current price, not a guess, and be ready to explain what's included.",
+ scripts:[["Main","[VERIFY current monthly price for the plan/speed tier being offered — pricing has changed recently, confirm before quoting]. That covers your internet service; I'll walk through anything else, like equipment, before you decide anything."]],
+ verify:["Current residential plan pricing by speed tier","Whether a kit/equipment fee applies"]
+});
+
+add({id:"inet-contract", cat:"money", hot:true, product:"internet", title:"“Is there a contract? Can I cancel anytime?”",
+ sub:"Afraid of being locked in, same fear as TV contracts",
+ say:["Is there a contract?","Can I cancel whenever I want?","Am I locked into anything?","What if I want to stop after a month?"],
+ goal:"Be accurate about month-to-month service — don't promise more than confirmed.",
+ scripts:[["Main","This is a month-to-month service, not a long contract like some internet providers use — you're not locked in for years. [VERIFY current cancellation terms, any reactivation fees, and equipment return rules before stating them as fact]"]],
+ verify:["Exact cancellation process and any fees","Equipment return window and any charges for not returning it"]
+});
+
+add({id:"inet-buy-or-rent-equipment", cat:"money", product:"internet", title:"“Do I have to buy the equipment, or is it rented?”",
+ sub:"Doesn't know if this is a purchase or a lease",
+ say:["Do I own the equipment?","Is it rented?","What happens to the equipment if I cancel?"],
+ goal:"Clarify ownership/rental model honestly — this affects what happens if they cancel.",
+ scripts:[["Main","[VERIFY current equipment model: is it purchased outright, included in the plan, or a rental that must be returned if service is cancelled]. I want to give you the exact answer, not a guess, since it affects what happens if you ever cancel."]],
+ verify:["Equipment ownership model and any return requirement/fee on cancellation"]
+});
+
+add({id:"inet-electric-bill", cat:"money", hot:true, product:"internet", title:"“Will this raise my electric bill a lot?”",
+ sub:"Common worry for budget-conscious seniors",
+ say:["Will my electric bill go up?","How much power does this use?","Is this going to cost me more on electricity?"],
+ goal:"Give an honest, modest estimate — it's a small amount, comparable to a lamp or two.",
+ scripts:[["Main","It uses roughly the same power as a couple of light bulbs running all the time — typically only a few dollars a month in electricity, though it can use a bit more during heavy rain or snow when it's working harder. It's not going to meaningfully change your bill."]]
+});
+
+add({id:"inet-deposit-setup-fee", cat:"money", product:"internet", title:"“Is there a deposit or setup fee?”",
+ sub:"Wants to know the full upfront cost",
+ say:["Is there a deposit?","Is there a setup fee?","What do I pay today versus later?"],
+ goal:"State the exact today-vs-later breakdown, verified, never a guess.",
+ scripts:[["Main","[VERIFY exact amount due today vs. the ongoing monthly price — recap every line before asking for payment, same as any other order]"]],
+ verify:["Exact amount due today including any kit/equipment fee"]
+});
+
+add({id:"inet-money-back", cat:"money", product:"internet", title:"“What if I don't like it, can I get my money back?”",
+ sub:"Wants an exit option before committing",
+ say:["Can I get a refund?","What if I try it and don't like it?","Is there a money-back guarantee?"],
+ goal:"Only state a refund policy that's actually confirmed — don't promise one that may not exist.",
+ scripts:[["Main","[VERIFY whether a satisfaction/refund period currently applies, and its exact terms, before stating anything to the customer — do not promise a refund that isn't confirmed]"]],
+ dont:["Promising a money-back guarantee without confirming it's actually offered right now"]
+});
+
+add({id:"inet-price-go-up", cat:"money", product:"internet", title:"“Will the price go up later, like my TV bill did?”",
+ sub:"Burned by TV price increases, assumes the same pattern",
+ say:["Will the price go up later?","Is this going to creep up like my TV bill?","Is this price locked in?"],
+ goal:"Be straight about it — don't promise a lifetime lock that isn't real.",
+ scripts:[["Main","I won't tell you it never changes, because I'd rather you trust me later — but I'll tell you exactly what's locked in versus what could change, same as I would with your TV price. [VERIFY current price-change/rate-increase policy for this product]"]]
+});
+
+add({id:"inet-bundle-one-bill", cat:"money", product:"internet", title:"“Can I put it on the same bill as my TV so it's all one payment?”",
+ sub:"Wants billing simplicity",
+ say:["Can this go on one bill with my TV?","Will I get two separate bills?","Can you combine them?"],
+ goal:"Give the accurate billing structure — don't assume a bundle discount or combined bill exists without confirming.",
+ scripts:[["Main","[VERIFY whether Starlink and TV currently bill together as one statement here, or arrive as two separate bills from two companies]"]]
+});
+
+add({id:"inet-pause-not-using", cat:"money", product:"internet", title:"“What if I only need it part of the year — can I pause it?”",
+ sub:"Seasonal resident or infrequent user",
+ say:["Can I pause it for a few months?","I'm only here part of the year, can I turn it off sometimes?","Can I put it on hold in winter?"],
+ goal:"Confirm whether a pause/standby option exists before promising it.",
+ scripts:[["Main","[VERIFY whether a pause/standby option exists, and its cost, before promising this — don't assume]"]]
+});
+
+add({id:"inet-rain", cat:"reliability", hot:true, product:"internet", title:"“Will it still work when it rains?”",
+ sub:"Most common weather worry",
+ say:["Does rain affect it?","Will it stop working when it rains?","Does weather mess with it?"],
+ goal:"Honest answer: usually fine, heavy rain can cause brief hiccups.",
+ scripts:[["Main","Light rain almost never causes a problem. In a real downpour you might see a short slowdown or a brief drop for a few minutes, the same way an old TV picture could get fuzzy in a storm — but it clears up on its own once the rain lets up."]]
+});
+
+add({id:"inet-snow", cat:"reliability", hot:true, product:"internet", title:"“What about snow? Will it stop working in winter?”",
+ sub:"Common in colder climates",
+ say:["Will snow stop it from working?","Does it work in winter?","What if snow piles up on it?"],
+ goal:"Explain the built-in heater feature in plain terms.",
+ scripts:[["Main","It actually has a built-in heater that melts light snow and ice right off the dish on its own. If a heavy snowstorm piles snow up faster than it can melt, it may need a quick brush-off, same as you'd clear snow off a car mirror."]]
+});
+
+add({id:"inet-power-outage", cat:"reliability", hot:true, product:"internet", title:"“What happens if the power goes out?”",
+ sub:"Very common and reasonable question",
+ say:["What if the power goes out?","Does it work without electricity?","What happens during a blackout?"],
+ goal:"Be honest: it needs power to run, like almost anything electronic, but a small backup battery can bridge outages.",
+ scripts:[["Main","Just like your WiFi router or a cordless phone, it needs electricity to run, so it will go down if your power goes out. If outages are common where you live, a small backup battery or power pack can keep it running for a while during a short outage — that's optional, not required."]]
+});
+
+add({id:"inet-storm-lightning", cat:"reliability", product:"internet", title:"“Will a storm or lightning hit it and break it?”",
+ sub:"Worried about storm damage",
+ say:["Will lightning hit it?","Is it dangerous to have it up during a storm?","Will a storm break it?"],
+ goal:"Reassure — direct lightning strikes on dishes are rare, same risk level as any outdoor electronic.",
+ scripts:[["Main","It's no more at risk than a TV antenna or outdoor light fixture — direct lightning strikes on these are rare. The bigger risk in a storm is losing power, not the dish itself getting damaged."]]
+});
+
+add({id:"inet-slower-than-cable", cat:"reliability", product:"internet", title:"“Is it slower than what the cable company has?”",
+ sub:"Comparing to wired competitors",
+ say:["Is this slower than cable?","Will this be as fast as my neighbor's internet?","How does the speed compare?"],
+ goal:"Be honest: satellite internet has a bit more delay than cable, but is a real, usable option, especially where cable isn't available.",
+ scripts:[["Main","Satellite internet has a touch more delay than cable, so you might notice it on something like a fast-paced video game, but for everyday things — email, browsing, video calls, streaming — most people don't notice a difference. [VERIFY current speed tier being quoted for this customer's area]"]]
+});
+
+add({id:"inet-cuts-out-video-call", cat:"reliability", product:"internet", title:"“Will it cut out while I'm on a video call or watching something?”",
+ sub:"Worried about mid-use interruptions",
+ say:["Will it cut off during a video call?","Will my shows freeze up?","Does it drop out a lot?"],
+ goal:"Set honest expectations without overselling.",
+ scripts:[["Main","It's built to stay connected steadily, and most people get a smooth experience day to day. Like any internet service, bad weather or a lot of devices running at once can occasionally cause a hiccup, but it's not something that happens constantly."]]
+});
+
+add({id:"inet-works-remote", cat:"reliability", product:"internet", title:"“I live out in the country — does it even work all the way out here?”",
+ sub:"Rural customers, often the primary audience for Starlink",
+ say:["Does this work way out where I live?","I'm in the middle of nowhere, will this even work?","Nothing else works out here, will this?"],
+ goal:"This is actually Starlink's biggest strength — it doesn't need nearby cables or towers.",
+ scripts:[["Main","This is exactly where it does its best work — since it talks straight to satellites overhead, it doesn't need a cable running down your road or a tower nearby like other services do. As long as the dish can see open sky, your location being remote isn't a problem."]]
+});
+
+add({id:"inet-how-reliable-overall", cat:"reliability", product:"internet", title:"“Is this actually reliable, or is it one of those things that barely works?”",
+ sub:"General skepticism about satellite internet's reputation",
+ say:["Is this actually reliable?","I've heard satellite internet is bad","Does this actually work well?"],
+ goal:"Acknowledge older satellite internet's bad reputation, explain why this is different.",
+ scripts:[["Main","That reputation comes from older satellite internet, which used a few satellites very far up in space, causing a lot of lag and dropouts. This uses thousands of satellites much closer to Earth, which is why it holds up a lot better day to day. It's not perfect in every single storm, but it's a real, dependable option, not the old kind."]]
+});
+
+add({id:"inet-use-ipad", cat:"compat", product:"internet", title:"“Can I use it with my iPad or tablet?”",
+ sub:"Confirming basic device compatibility",
+ say:["Can I use my iPad with this?","Will my tablet work?","Does it work with an iPhone or an Android?"],
+ goal:"Yes — it works like any other home WiFi with any modern device.",
+ scripts:[["Main","Yes, any tablet, iPad, phone, or laptop connects to it the same way it would connect to any home WiFi — you'll just pick the WiFi name and type in a password once."]]
+});
+
+add({id:"inet-email-same", cat:"compat", product:"internet", title:"“Will my email still work the same way?”",
+ sub:"Worried about losing access to existing email",
+ say:["Will my email still work?","Do I lose my email if I switch internet?","Will my email change?"],
+ goal:"Reassure — email accounts are independent of which internet service they use.",
+ scripts:[["Main","Your email stays exactly the same — it belongs to you, not to your internet company, so switching how you connect to the internet doesn't change your email address or anything in it."]]
+});
+
+add({id:"inet-facetime-grandkids", cat:"compat", hot:true, product:"internet", title:"“Can I video call my grandkids with it?”",
+ sub:"Often the real emotional reason they're considering this at all",
+ say:["Can I video call my grandkids?","Can I do FaceTime with this?","Can I see my family on the screen?","Will this let me do video calls?"],
+ goal:"Lead with this — it's frequently the actual motivation, not the technical specs.",
+ scripts:[["Main","Yes — this is one of the best things about having internet at home. You'll be able to video call your grandkids, see their faces, watch them open presents or show you their day, any time, from your own living room."]]
+});
+
+add({id:"inet-need-new-computer", cat:"compat", product:"internet", title:"“Do I need to buy a new computer?”",
+ sub:"Assumes new hardware is mandatory",
+ say:["Do I need a new computer?","Will my old computer still work?","Do I have to buy a tablet?"],
+ goal:"No — existing devices usually work fine.",
+ scripts:[["Main","No, you don't need to buy anything new. If you already have a phone, tablet, computer, or smart TV, it'll almost certainly work fine with this."]]
+});
+
+add({id:"inet-multiple-people", cat:"compat", product:"internet", title:"“Can more than one person use it at the same time?”",
+ sub:"Multiple household members/devices",
+ say:["Can more than one person use it?","Can my husband and I both be online at once?","How many devices can connect?"],
+ goal:"Yes — a household's worth of devices works fine.",
+ scripts:[["Main","Yes, multiple people and multiple devices can all be online at the same time — phones, tablets, TVs, all connected to the same WiFi without a problem."]]
+});
+
+add({id:"inet-dont-know-wifi-password", cat:"compat", product:"internet", title:"“I don't know how any of this WiFi password stuff works.”",
+ sub:"Intimidated by the basic act of connecting a device",
+ say:["I don't know how to connect to WiFi","What do I do with the password?","I don't understand the WiFi part"],
+ goal:"Make it feel like a one-time, simple step, not an ongoing technical skill.",
+ scripts:[["Main","It's a one-time thing: you pick the WiFi name from a short list on your phone or tablet, type the password in once, and your device remembers it after that — you won't have to do it again unless you get a brand new device. I can also write the name and password down on a card for you to keep by the router."]]
+});
+
+add({id:"inet-smart-tv", cat:"compat", product:"internet", title:"“Will it work with my smart TV / my streaming box?”",
+ sub:"Device compatibility for streaming",
+ say:["Will my smart TV work with this?","Can I use my Roku/Firestick with this?","Will my streaming box work?"],
+ goal:"Yes — standard home WiFi compatibility.",
+ scripts:[["Main","Yes, any smart TV or streaming device connects the same way any other device does — through the WiFi this sets up in your home."]]
+});
+
+add({id:"inet-pacemaker-hearing-aid", cat:"compat", hot:true, product:"internet", title:"“Will it mess with my pacemaker or hearing aid?”",
+ sub:"A real medical safety concern — answer honestly, don't guess",
+ say:["Will this affect my pacemaker?","Will this interfere with my hearing aid?","Is this safe with medical devices?"],
+ goal:"Take this seriously, give what's actually known, and point to the right authority rather than reassuring blindly.",
+ scripts:[["Main","That's an important question and I want to give you a real answer, not just a reassurance. The equipment operates at low power levels similar to a home WiFi router. [VERIFY current guidance before stating anything further — if the customer has a pacemaker or hearing aid, recommend they check with their device's manufacturer or their doctor, since this center shouldn't make medical safety claims.]"]],
+ dont:["Telling a customer with a pacemaker or hearing aid it's '100% safe' without a verified source — point them to their device manufacturer or doctor instead"]
+});
+
+add({id:"inet-keep-email-address", cat:"compat", product:"internet", title:"“Can I keep the same email address I've had for years?”",
+ sub:"Afraid of losing a long-held email identity",
+ say:["Can I keep my email address?","Will I lose my old email?","Do I have to get a new email?"],
+ goal:"Reassure — switching internet providers never changes an existing email address (unless it was provided by their old internet company specifically).",
+ scripts:[["Main","If your email is a Gmail, Yahoo, or similar account, it stays exactly the same no matter who your internet is through. The one exception is if your email address came directly from your current internet or phone company — if that's the case, let's check that specifically so there are no surprises."]],
+ verify:["Whether the customer's current email is provided by their outgoing ISP (would need migrating) vs. an independent provider"]
+});
+
+add({id:"inet-viruses-antivirus", cat:"compat", product:"internet", title:"“Will I get viruses? Do I need antivirus?”",
+ sub:"General online-safety anxiety",
+ say:["Will I get a virus?","Do I need antivirus software?","Is the internet going to give my computer a virus?"],
+ goal:"Separate the internet service from device safety habits — give simple, actionable safety tips.",
+ scripts:[["Main","The internet connection itself doesn't give you a virus — that mostly comes from clicking suspicious links or downloads. A good rule: never click a link or give out information to someone who contacts you first, whether by email, text, or a popup on the screen. If anything looks odd, it's always okay to stop and ask a family member or us before clicking anything."]]
+});
+
+add({id:"inet-is-this-scam", cat:"trust", hot:true, product:"internet", title:"“Is this a scam? I've heard about internet scams.”",
+ sub:"Seniors are a frequent scam target and rightly cautious",
+ say:["Is this a scam?","How do I know this is real?","I've heard about people getting scammed with internet stuff"],
+ goal:"Take the concern seriously rather than being defensive — explain how they can verify independently.",
+ scripts:[["Main","I completely understand being careful — there really are scams out there, and you're right to ask. Here's how you can check: everything we agree to will be in writing before anything is final, you can call our main company number to verify this call, and Starlink's own website can confirm it's a real, available service in your area. Nothing about a legitimate offer should ever pressure you to decide in the next five minutes."]],
+ dont:["Getting defensive or rushing them past the concern — slow down instead"]
+});
+
+add({id:"inet-really-spacex", cat:"trust", product:"internet", title:"“Is this really the Elon Musk satellite thing? Is it legit?”",
+ sub:"Wants to confirm it's the real, known company",
+ say:["Is this the Elon Musk satellite internet?","Is this really SpaceX?","Is this the real Starlink?"],
+ goal:"Confirm honestly, and explain the actual business relationship (reseller/partner vs. being SpaceX itself).",
+ scripts:[["Main","Yes, Starlink is a real satellite internet service built by SpaceX. [VERIFY exact relationship: whether this company is an authorized reseller/partner, and describe it accurately rather than implying we are SpaceX itself]"]],
+ verify:["Exact, accurate description of this company's relationship to SpaceX/Starlink for compliance"]
+});
+
+add({id:"inet-see-my-info", cat:"trust", product:"internet", title:"“Will people be able to see my information / what I do online?”",
+ sub:"Privacy concern",
+ say:["Can people see what I'm doing online?","Is my information safe?","Can someone hack into this?"],
+ goal:"Give an honest, non-technical answer about normal privacy protections, without overpromising perfect security.",
+ scripts:[["Main","Your home network has a password, so a stranger can't just connect to it or see what you're doing from outside your house. Like any internet connection, the best protection is the same habits anywhere: don't share passwords or personal information with anyone who contacts you out of the blue."]]
+});
+
+add({id:"inet-radiation-safety", cat:"trust", product:"internet", title:"“Is the dish giving off radiation that's bad for me?”",
+ sub:"Health/EMF concern",
+ say:["Does this give off radiation?","Is this bad for my health?","Will this hurt me being so close to it?"],
+ goal:"Answer honestly within what's actually known, don't overstate certainty either direction.",
+ scripts:[["Main","It uses the same type of low-power radio signal as your home WiFi router or cell phone, which is a different, much weaker kind than things like X-rays. [VERIFY current official safety guidance/FCC information before making specific claims — don't state scientific certainty we can't back up]"]],
+ verify:["Current FCC/manufacturer safety documentation to reference accurately if asked for specifics"]
+});
+
+add({id:"inet-trust-installer", cat:"trust", product:"internet", title:"“Can I trust the person coming to my house to install it?”",
+ sub:"Safety concern about a stranger entering/visiting the home",
+ say:["Who is this person coming to my house?","Can I trust the installer?","Will I know who's coming?"],
+ goal:"Reassure with concrete verification steps, especially important for a senior living alone.",
+ scripts:[["Main","[VERIFY what identification/verification the installer or self-install process actually provides — e.g. uniform, ID badge, confirmation call ahead of arrival — and tell the customer exactly what to expect and how to confirm it's legitimate before opening the door]"]]
+});
+
+add({id:"inet-why-so-cheap-catch", cat:"trust", product:"internet", title:"“Why is it so affordable, what's the catch?”",
+ sub:"Suspicious that a good price means something's hidden",
+ say:["What's the catch?","Why is this so cheap?","This seems too good to be true"],
+ goal:"Explain honestly why the price is what it is, without inventing a reason, and surface real costs upfront.",
+ scripts:[["Main","No catch — I'll tell you everything that's part of the price and everything that isn't before you decide anything, written down, not just said out loud. [VERIFY all current fees/add-ons so nothing surprises them later]"]],
+ dont:["Saying 'no catch' without actually having verified and disclosed every real fee"]
+});
+
+add({id:"inet-ask-son-daughter", cat:"close", hot:true, product:"internet", title:"“I need to ask my son/daughter first.”",
+ sub:"Very common stall for senior customers, often genuine",
+ say:["Let me ask my daughter","I need to check with my son first","My kids usually help me with this kind of thing"],
+ goal:"Respect it as often genuine, but try to get the family member on the call now rather than losing the thread entirely.",
+ scripts:[["Main","That makes a lot of sense, it's smart to loop in family on something like this. Is your son or daughter someone I could get on the phone right now, even just for a couple of minutes? That way you both hear the same thing from me instead of it getting retold."],
+  ["If they can't reach them now","No problem — what's the best way to make sure this doesn't fall through the cracks? I can call back at a set time that works for both of you [VERIFY: can we commit to a specific callback time for this scenario, or does policy require the customer to call us], or leave you with exactly what to show them."]
+ ]
+});
+
+add({id:"inet-think-about-it", cat:"close", hot:true, product:"internet", title:"“Let me think about it.”",
+ sub:"Generic stall, often masks a smaller, specific concern",
+ say:["Let me think about it","I need some time","I'm not sure yet"],
+ goal:"Find the real, specific hesitation underneath the generic stall.",
+ scripts:[["Main","Totally fair — can I ask what part you want to think over? Sometimes it's the price, sometimes it's whether it'll actually work at your place, sometimes it's just wanting to sleep on it. If I know which one, I can probably answer it right now instead of leaving you wondering."]]
+});
+
+add({id:"inet-dont-need-at-my-age", cat:"close", product:"internet", title:"“I don't think I need the internet at my age.”",
+ sub:"Self-disqualifying based on age",
+ say:["I'm too old for this","I don't need the internet at my age","This isn't for someone like me"],
+ goal:"Reconnect it to something they do care about — usually family contact or simple convenience, not technology for its own sake.",
+ scripts:[["Main","I hear that a lot, and I'd say the same thing if someone pitched me on technology for technology's sake. But most folks I talk to end up using it for one or two simple things — seeing their grandkids on a video call, or looking something up without having to ask someone else. Is there anything like that in your life it might actually help with?"]]
+});
+
+add({id:"inet-call-back-decision", cat:"close", product:"internet", title:"“Can you just call me back after I decide?”",
+ sub:"Same inbound-only constraint as the TV side",
+ say:["Can you call me back later?","I'll call you back after I think about it","Can you check back with me?"],
+ goal:"Same house rule as TV: we can't call out, so solve it on this call.",
+ scripts:[["Main","I wish I could, but I'm not able to call back out — that's actually the reason I'd rather finish answering your questions now, while I'm already here. What's the one thing still holding you back?"]]
+});
+
+add({id:"inet-keep-things-as-is", cat:"close", product:"internet", title:"“I'd rather just keep things the way they are.”",
+ sub:"Comfort with the status quo, possibly no internet at all currently",
+ say:["I'll just keep things as they are","I don't want to change anything","I've managed fine without it"],
+ goal:"Respect their comfort, but check whether 'fine' means they're missing something they'd actually value.",
+ scripts:[["Main","That's completely fair, and if it's truly working for you, there's no pressure from me. Can I ask one thing though — is there anything you've wanted to do, like seeing family on a video call or looking something up, that you haven't been able to because you don't have this? If the answer's really nothing, I'll leave it there."]]
+});
+
 /* ===================== HELPERS ===================== */
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -2801,18 +3254,19 @@ function scriptHTML(label, text, tier){
 }
 
 /* ===================== STATE ===================== */
-let state = { cat:"all", tier: store.get("tier","all"), q:"", sel: null, stage:"" };
+let state = { cat:"all", tier: store.get("tier","all"), q:"", sel: null, stage:"", product: store.get("product","tv") };
 
 /* ===================== OBJECTION LIST ===================== */
 function matches(o, q){
   if(!q) return true;
-  const hay = [o.title,o.sub,(o.say||[]).join(" "),(o.tech||[]).join(" "),(o.scripts||[]).map(s=>s[1]).join(" "),(PUSH[o.id]||[]).map(p=>p[1]).join(" "),CX[o.id]||"",CATS[o.cat]].join(" ").toLowerCase();
+  const hay = [o.title,o.sub,(o.say||[]).join(" "),(o.tech||[]).join(" "),(o.scripts||[]).map(s=>s[1]).join(" "),(PUSH[o.id]||[]).map(p=>p[1]).join(" "),CX[o.id]||"",catsFor(o.product)[o.cat]].join(" ").toLowerCase();
   return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
 }
 function renderCats(){
-  const c = [["all","All"],["hot","Top leaks"],...Object.entries(CATS)];
+  const cm = catsFor(state.product);
+  const c = [["all","All"],["hot","Top leaks"],...Object.entries(cm)];
   $("#cats").innerHTML = c.map(([k,v]) => `<button class="chip" data-cat="${k}" aria-pressed="${state.cat===k}">${v}</button>`).join("") +
-    `<select id="stageSel" class="stage-sel" aria-label="Filter by call-flow step"><option value="">Any call step</option>${STAGES.map((n,i)=>`<option value="${i+1}"${+state.stage===i+1?" selected":""}>Step ${i+1}: ${n}</option>`).join("")}</select>`;
+    (state.product==="tv" ? `<select id="stageSel" class="stage-sel" aria-label="Filter by call-flow step"><option value="">Any call step</option>${STAGES.map((n,i)=>`<option value="${i+1}"${+state.stage===i+1?" selected":""}>Step ${i+1}: ${n}</option>`).join("")}</select>` : "");
 }
 function score(o, q){
   const ws = q.toLowerCase().split(/\s+/).filter(Boolean);
@@ -2821,16 +3275,17 @@ function score(o, q){
   return ws.reduce((n,w)=> n + (t.includes(w)?3:0) + (s.includes(w)?2:0), 0) + (t.includes(ql)?6:0) + (s.includes(ql)?4:0) + (o.hot?0.5:0);
 }
 function filtered(){
-  const r = O.filter(o => (state.cat==="all" || (state.cat==="hot" ? o.hot : o.cat===state.cat)) && matches(o, state.q) && (!state.stage || (STAGE_OF[o.id]||[]).includes(+state.stage)));
+  const r = O.filter(o => o.product===state.product && (state.cat==="all" || (state.cat==="hot" ? o.hot : o.cat===state.cat)) && matches(o, state.q) && (!state.stage || (STAGE_OF[o.id]||[]).includes(+state.stage)));
   return state.q ? r.sort((a,b)=>score(b,state.q)-score(a,state.q)) : r;
 }
 function renderList(){
   const list = filtered();
   if(!list.length){ $("#items").innerHTML = `<div class="empty">No match. Try fewer words, e.g. “paid”, “spouse”, “contract”.</div>`; return; }
   let html = "", last = null;
-  const sorted = state.q ? list : [...list].sort((a,b)=>Object.keys(CATS).indexOf(a.cat)-Object.keys(CATS).indexOf(b.cat));
+  const cm = catsFor(state.product);
+  const sorted = state.q ? list : [...list].sort((a,b)=>Object.keys(cm).indexOf(a.cat)-Object.keys(cm).indexOf(b.cat));
   for(const o of sorted){
-    if(!state.q && o.cat!==last){ html += `<div class="group-h">${CATS[o.cat]}</div>`; last=o.cat; }
+    if(!state.q && o.cat!==last){ html += `<div class="group-h">${cm[o.cat]}</div>`; last=o.cat; }
     html += `<button class="item" data-id="${o.id}" aria-current="${state.sel===o.id}"><span class="t">${esc(o.title)}${o.hot?'<span class="hot">●</span>':""}</span><span class="s">${(STAGE_OF[o.id]||[]).map(n=>`<span class="stn">${n}</span>`).join("")}${esc(o.sub||"")}</span></button>`;
   }
   $("#items").innerHTML = html;
@@ -2841,7 +3296,16 @@ const HIDES = [["H","Hear","Pause. Let them finish."],["I","Identify","Label the
 function stepsHTML(arr){ return `<div class="hides" style="--n:${arr.length}">${arr.map(h=>`<div><b>${h[0]}</b><strong>${h[1]}</strong><br>${h[2]}</div>`).join("")}</div>`; }
 
 function renderHome(){
-  const hot = O.filter(o=>o.hot);
+  if(state.product==="internet"){
+    const hotI = O.filter(o=>o.product==="internet" && o.hot);
+    $("#detail").innerHTML = `
+    <div class="card"><h3>Starlink internet — objections &amp; questions</h3><p class="note" style="margin:0">Search exactly what the customer asked, or pick a category on the left. Written for first-time, non-technical customers — assume nothing is obvious, and never assume they know a term the first time you use it. Placeholders look like <span class="ph">{this}</span>; <span class="vf">VERIFY</span> means confirm the exact number or policy with your center before saying it as fact.</p></div>
+    <div class="card"><h3>Most common first questions</h3><div class="home-top">${hotI.map(o=>`<button class="leak" data-id="${o.id}"><b>${esc(o.title)}</b><span>${esc(o.sub)}</span></button>`).join("")}</div></div>
+    <div class="card"><h3>House rules for Internet calls</h3>
+     <ul class="dont"><li><b>Never assume they know a term.</b> WiFi, router, browser, app — define it plainly the first time, every time.</li><li><b>Slow down more than you think you need to.</b> Check understanding after every explanation instead of plowing ahead.</li><li><b>Lead with what it lets them do</b> — video calling grandkids, email, looking things up — not speed numbers or tech specs.</li><li><b>Never guess at pricing, fees, contract terms or refund policy.</b> These change — confirm the current numbers with your center every time, don't repeat an old figure from memory.</li><li><b>We can’t call out.</b> Same house rule as TV — solve it on this call, the callback is the last resort.</li><li><b>Take medical-safety questions (pacemakers, hearing aids) seriously.</b> Don't improvise reassurance — point to a verified source or the device manufacturer.</li></ul></div>`;
+    return;
+  }
+  const hot = O.filter(o=>o.product==="tv" && o.hot);
   $("#detail").innerHTML = `
   <div class="card"><h3>1st objection: H.I.D.E.S.</h3>${stepsHTML(HIDES)}
    <h3>Every pushback after that: S.T.A.Y.</h3>${stepsHTML(STAY)}
@@ -2869,7 +3333,7 @@ function renderDetail(id){
   const hidden = (o.scripts||[]).length - scripts.length;
   let h = `<button class="back" id="backBtn">← All objections</button>
   <div class="card d-head">
-    <div class="meta"><span class="badge">${CATS[o.cat]}</span>${o.hot?'<span class="badge hot">Top leak</span>':""}${(o.tech||[]).map(x=>`<span class="badge tech">${esc(x)}</span>`).join("")}</div>
+    <div class="meta"><span class="badge">${catsFor(o.product)[o.cat]}</span>${o.hot?'<span class="badge hot">Top leak</span>':""}${(o.tech||[]).map(x=>`<span class="badge tech">${esc(x)}</span>`).join("")}</div>
     <h2>${esc(o.title)}</h2>
     <h3>They say</h3><div class="says">${o.say.map(s=>`<span>“${esc(s)}”</span>`).join("")}</div>
     ${CX[o.id]?`<h3>In their shoes</h3><div class="cx">“${esc(CX[o.id])}”</div>`:""}
@@ -2903,6 +3367,10 @@ function renderDetail(id){
 }
 
 function select(id, push=true){
+  if(id){
+    const o = O.find(x=>x.id===id);
+    if(o && o.product!==state.product){ state.product = o.product; store.set("product", state.product); syncProduct(); applyProductUI(); renderCats(); }
+  }
   state.sel = id;
   if(push){ try{ history.replaceState(null,"",id?"#"+id:location.pathname); }catch(e){} }
   $("#obGrid").classList.toggle("show-detail", !!id);
@@ -3074,6 +3542,7 @@ function scenHTML(s){
 }
 
 function renderFacts(){
+  if(state.product==="internet"){ renderFactsInternet(); return; }
   $("#facts").innerHTML = `
   <div class="card"><h2>Qualification tiers (set by credit: not by the package)</h2><div class="tbl-wrap"><table>
    <thead><tr><th>Tier</th><th>Due today</th><th>Bill up front</th><th>Activation / lease fee</th><th>Equipment</th></tr></thead><tbody>
@@ -3140,6 +3609,50 @@ function renderFacts(){
   <p class="note">Sources: dish.com packages & terms, DISH Flex24 and Digital Home Advantage agreements (9/10/26), review research. Public info can change, confirm with your center.</p>`;
 }
 
+function renderFactsInternet(){
+  $("#facts").innerHTML = `
+  <div class="card"><h2>Starlink residential plans (public pricing, verify current numbers)</h2><div class="tbl-wrap"><table>
+   <thead><tr><th>Plan</th><th>Typical speed</th><th>Monthly price</th></tr></thead><tbody>
+   <tr><td>Residential</td><td>~100 Mbps</td><td><span class="vf">VERIFY current price with your center</span></td></tr>
+   <tr><td>Residential (mid tier)</td><td>~200 Mbps, select areas</td><td><span class="vf">VERIFY</span></td></tr>
+   <tr><td>Residential MAX</td><td>Up to 400+ Mbps</td><td><span class="vf">VERIFY</span></td></tr>
+   </tbody></table></div><p class="note">Pricing has changed more than once recently and varies by area and availability — never quote a number from memory, always confirm the current price before telling a customer.</p></div>
+
+  <div class="card"><h2>Equipment &amp; install, in plain words</h2><div class="tbl-wrap"><table><tbody>
+   <tr><td>What's in the kit</td><td>Dish (~20 in. long), WiFi router, cables, power cord, a simple kickstand to start</td></tr>
+   <tr><td>Where it goes</td><td>Anywhere with a clear, open view of the sky — roof, pole, deck, or ground to start. Trees/overhangs can block it.</td></tr>
+   <tr><td>Who installs it</td><td><span class="vf">VERIFY: professional install vs. customer self-install with guided support, at this center</span></td></tr>
+   <tr><td>Typical setup time</td><td>Well under an hour once equipment is on hand and a clear spot is found</td></tr>
+   <tr><td>Power needs</td><td>Plugs into a normal wall outlet — no special wiring or electrician needed</td></tr>
+   <tr><td>Typical electricity use</td><td>Roughly comparable to a couple of light bulbs running continuously; a bit more during heavy rain/snow</td></tr>
+   </tbody></table></div></div>
+
+  <div class="cols">
+   <div class="card"><h2>Weather &amp; reliability</h2><ul style="margin:0;padding-left:18px">
+    <li>Light rain: usually no effect</li>
+    <li>Heavy rain/storms: brief slowdown or short dropout possible, clears on its own</li>
+    <li>Snow/ice: built-in heater melts light accumulation automatically; heavy piled snow may need a quick brush-off</li>
+    <li>Lightning: no more at risk than a TV antenna or outdoor light fixture — direct strikes are rare</li>
+    <li><b>Power outage is the real risk</b> — the dish needs electricity and will go down with the power, same as a WiFi router; an optional backup battery/power pack can bridge short outages</li>
+   </ul></div>
+   <div class="card"><h2>Contract &amp; money</h2><ul style="margin:0;padding-left:18px">
+    <li>Billed month-to-month, not a multi-year contract <span class="vf">VERIFY current cancellation terms before stating as fact</span></li>
+    <li>Equipment ownership/rental model <span class="vf">VERIFY — affects what happens if they cancel</span></li>
+    <li>Refund/satisfaction period <span class="vf">VERIFY before promising one exists</span></li>
+    <li>Any reactivation or move fees <span class="vf">VERIFY</span></li>
+   </ul></div>
+  </div>
+
+  <div class="card"><h2>What this is actually good for (lead with this, not specs)</h2><ul style="margin:0;padding-left:18px">
+   <li>Video calls with grandkids (FaceTime, Zoom, etc.)</li>
+   <li>Email, browsing, looking things up</li>
+   <li>Streaming shows on a smart TV or streaming box</li>
+   <li>Working anywhere a cable or phone line can't reach — rural and remote locations are where this performs best, since it talks directly to satellites instead of needing nearby lines or towers</li>
+  </ul></div>
+
+  <p class="note">Grounded in public Starlink information and third-party reporting as of late 2026; several figures (price, fees, cancellation/refund policy, install model) change and vary by center/area — every <span class="vf">VERIFY</span> item must be confirmed before being stated to a customer as fact.</p>`;
+}
+
 function pathBackText(){
   const d = n => store.get(n,"");
   const name = d("name") || "{your name}", num = d("num") || "{number}", day = d("day") || "{day}", time = d("time") || "{time}", bring = d("bring") || "{card, ID, spouse}";
@@ -3173,8 +3686,9 @@ function renderGrid(){
     $("#gridPw").focus();
     return;
   }
-  const cards = Object.entries(CATS).map(([key,label])=>{
-    const items = O.filter(o=>o.cat===key);
+  const cm = catsFor(state.product);
+  const cards = Object.entries(cm).map(([key,label])=>{
+    const items = O.filter(o=>o.product===state.product && o.cat===key);
     const trs = items.map(o=>{
       const line = (o.scripts && o.scripts[0]) ? o.scripts[0][1] : (o.goal || "");
       const short = line.length>130 ? line.slice(0,127)+"…" : line;
@@ -3182,7 +3696,8 @@ function renderGrid(){
     }).join("");
     return `<div class="card"><h2>${esc(label)}</h2><div class="tbl-wrap"><table><thead><tr><th>Trigger</th><th>Lead-in response</th></tr></thead><tbody>${trs}</tbody></table></div></div>`;
   }).join("");
-  $("#grid").innerHTML = `<div class="card"><h2>Objection quick-reference grid</h2><p class="note" style="margin:0">Click any row to jump to its full detail. <button class="pbtn ghost" id="gridLockBtn" style="margin-left:8px;width:auto;padding:4px 10px;font-size:12px">Lock again</button></p></div>` + cards;
+  const prodLabel = state.product==="tv" ? "TV" : "Internet";
+  $("#grid").innerHTML = `<div class="card"><h2>Objection quick-reference grid — ${prodLabel}</h2><p class="note" style="margin:0">Click any row to jump to its full detail. <button class="pbtn ghost" id="gridLockBtn" style="margin-left:8px;width:auto;padding:4px 10px;font-size:12px">Lock again</button></p></div>` + cards;
   const lockBtn = $("#gridLockBtn");
   if(lockBtn) lockBtn.addEventListener("click", () => { try{ sessionStorage.removeItem("op_grid_unlocked"); }catch(e){} renderGrid(); });
 }
@@ -3551,10 +4066,37 @@ function setView(v){
   if(v==="stats") renderStats();
   if(v==="flow") renderFlow();
   if(v==="grid") renderGrid();
+  if(v==="facts") renderFacts();
   window.scrollTo(0,0);
+}
+function applyProductUI(){
+  document.querySelectorAll("[data-tv-only]").forEach(t=>{ t.style.display = state.product==="tv" ? "" : "none"; });
+  const tierWrap = document.getElementById("tierWrap");
+  if(tierWrap) tierWrap.style.display = state.product==="tv" ? "" : "none";
+}
+function syncProduct(){ document.querySelectorAll("#productSeg button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.product===state.product)); }
+function setProduct(p){
+  if(state.product===p) return;
+  state.product = p;
+  store.set("product", p);
+  state.cat = "all"; state.q = ""; state.stage = ""; state.sel = null;
+  try{ $("#q").value = ""; }catch(e){}
+  syncProduct();
+  applyProductUI();
+  renderCats();
+  const activeTab = document.querySelector('.tab[aria-selected="true"]');
+  const curView = activeTab ? activeTab.dataset.view : "obj";
+  const tvOnlyViews = ["scen","flow","rapport","lock"];
+  if(p==="internet" && tvOnlyViews.includes(curView)){ setView("obj"); return; }
+  renderList();
+  renderHome();
+  renderFacts();
+  renderGrid();
+  try{ history.replaceState(null,"",location.pathname); }catch(e){}
 }
 document.addEventListener("click", e => {
   const cp = e.target.closest("[data-copy]"); if(cp){ copyText(cp.dataset.copy, cp); return; }
+  const prod = e.target.closest("[data-product]"); if(prod){ setProduct(prod.dataset.product); return; }
   const tab = e.target.closest(".tab"); if(tab){ setView(tab.dataset.view); return; }
   const go = e.target.closest("[data-goto]"); if(go){ e.preventDefault(); setView(go.dataset.goto); return; }
   const cat = e.target.closest("[data-cat]"); if(cat){ state.cat = cat.dataset.cat; renderCats(); renderList(); return; }
@@ -3603,9 +4145,10 @@ tickClock();
 setInterval(tickClock, 1000);
 
 /* Init */
+syncProduct(); applyProductUI();
 renderCats(); syncTier(); renderFlow(); renderFacts();
 const startId = location.hash.slice(1);
-if(O.some(o=>o.id===startId)) select(startId,false); else { renderList(); renderHome(); }
+if(O.some(o=>o.id===startId)){ select(startId,false); } else { renderList(); renderHome(); }
 </script>
 </body>
 </html>
