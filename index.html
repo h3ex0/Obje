@@ -88,8 +88,6 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04
 .copy.done{color:var(--ok);border-color:var(--ok)}
 .ph{background:var(--ph);color:var(--ph-ink);border-radius:4px;padding:0 3px;font-weight:600}
 .vf{background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:0 4px;font-size:12px;font-weight:700;overflow-wrap:anywhere;-webkit-box-decoration-break:clone;box-decoration-break:clone}
-.ok-text{color:var(--ok);font-weight:700}
-.bad-text{color:var(--bad);font-weight:700}
 .qa{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin-bottom:12px}
 .qa .q{font-weight:700;margin-bottom:3px}
 .qa .a{font-size:15.5px}
@@ -3776,9 +3774,9 @@ async function wikiPlaces(lat, lon){
    Same lookups as "Rapport by zip" (zippopotam.us, open-meteo.com,
    nominatim.openstreetmap.org, en.wikipedia.org), but reached through the
    IT-approved Google-hosted lookup service (see /rapport-lookup-service in
-   this repo) deployed below, instead of calling each one directly. Already
-   wired in — no setup needed to use this tab. The address can still be
-   changed or cleared below if the deployment is ever replaced. */
+   this repo) instead of calling each one directly. The address is fixed in
+   code below (DEFAULT_LOOKUP_SERVICE) — there is no settings UI for this,
+   intentionally; to change it, edit this constant and redeploy the file. */
 const RAPPORT_CACHE2 = {};
 const DEFAULT_LOOKUP_SERVICE = "https://script.google.com/macros/s/AKfycbxwjxpmkabLLwvdwAyJdiwGFCt_Lh7UFn2EQ2y8NK_PkR8nnp09dvMvdjWgU7ypnHozhA/exec";
 function lookupServiceUrl(){ return (store.get("rapportLookupService", DEFAULT_LOOKUP_SERVICE)||"").trim(); }
@@ -3788,7 +3786,7 @@ function viaLookupService(url){
   return base + (base.includes("?") ? "&" : "?") + "url=" + encodeURIComponent(url);
 }
 function fetchOnce2(url, ms){
-  const c = new AbortController(); const t = setTimeout(()=>c.abort(), ms||12000);
+  const c = new AbortController(); const t = setTimeout(()=>c.abort(), ms||25000);
   return fetch(viaLookupService(url), {signal:c.signal}).then(async r => {
     if(!r.ok) throw new Error("HTTP "+r.status);
     const j = await r.json();
@@ -3833,7 +3831,7 @@ async function wikiPlaces2(lat, lon){
 async function rapportLookup2(zip){
   if(RAPPORT_CACHE2[zip]) return RAPPORT_CACHE2[zip];
   if(RAPPORT_CACHE[zip]) return RAPPORT_CACHE[zip];
-  const z = await fetchJSON2("https://api.zippopotam.us/us/"+zip, 10000);
+  const z = await fetchJSON2("https://api.zippopotam.us/us/"+zip, 25000);
   const p = z.places[0];
   const base = { zip, city:p["place name"], state:z.places[0].state, st:p["state abbreviation"], lat:+p.latitude, lon:+p.longitude, other:z.places.slice(1).map(x=>x["place name"]) };
   const settle = p => p.then(value=>({status:"fulfilled", value}), reason=>({status:"rejected", reason}));
@@ -3856,19 +3854,6 @@ async function rapportLookup2(zip){
   if(!res.errors.length) RAPPORT_CACHE2[zip] = res;
   return res;
 }
-async function checkLookupService(){
-  const out = $("#lookupTestOut"); if(!out) return;
-  out.textContent = "Checking…";
-  const usingService = !!lookupServiceUrl();
-  const t0 = performance.now();
-  try{
-    await fetchJSON2("https://api.zippopotam.us/us/10001", 10000);
-    out.innerHTML = `<span class="ok-text">Success</span> — reached the lookup data ${usingService?"through the lookup service":"directly"} in ${Math.round(performance.now()-t0)}ms.`;
-  }catch(e){
-    out.innerHTML = `<span class="bad-text">Failed</span> — ${usingService?"the lookup service":"a direct call"} could not reach the lookup data: ${esc(e.message)}.`;
-  }
-}
-
 const cleanTitle = t => String(t).replace(/\s*\([^)]*\)\s*$/,"");
 function partOfDay(localIso){
   const h = +String(localIso||"").slice(11,13);
@@ -3950,29 +3935,20 @@ async function runRapport2(){
   if(!/^\d{5}$/.test(zip)){ box.innerHTML = `<div class="card"><p class="note" style="margin:0">Enter a 5-digit US zip code.</p></div>`; return; }
   box.innerHTML = `<div class="card"><p class="note" style="margin:0">Looking up ${esc(zip)}${lookupServiceUrl()?" through the lookup service":""}…</p></div>`;
   try{ rapportLast2 = await rapportLookup2(zip); renderRapportResult(rapportLast2, "rapportOut2"); }
-  catch(e){ box.innerHTML = `<div class="card"><p class="note" style="margin:0">${/HTTP 404/.test(e.message)?`${esc(zip)} isn’t a known US zip code. Double-check it with the customer.`:`Couldn’t reach the lookup data (${esc(e.message)}). Check the internet connection, or Check connection below if a lookup service address is set.`}</p></div>`; }
+  catch(e){
+    const timedOut = /aborted/i.test(e.message);
+    box.innerHTML = `<div class="card"><p class="note" style="margin:0">${/HTTP 404/.test(e.message)?`${esc(zip)} isn’t a known US zip code. Double-check it with the customer.`:timedOut?`The lookup took too long and timed out. Try again — the first lookup after a quiet period can be slower.`:`Couldn’t reach the lookup data (${esc(e.message)}). Check the internet connection and try again.`}</p></div>`;
+  }
 }
 
 function renderRapport2(){
   if($("#rapport2").dataset.ready) return;
   $("#rapport2").dataset.ready = "1";
-  const saved = lookupServiceUrl();
   $("#rapport2").innerHTML = `
    <div class="card"><h2>Rapport by zip 2</h2>
     <p class="note" style="margin-top:0">Same tool as “Rapport by zip” — same data, same ready-to-say lines. Nothing to set up, just type a zip and look it up.</p>
     <div class="zip-row"><input id="zipIn2" inputmode="numeric" maxlength="5" placeholder="e.g. 78701" autocomplete="off"><button class="pbtn" id="zipGo2">Look up</button></div>
    </div>
-   <details class="card">
-    <summary style="cursor:pointer;font-weight:700">Advanced: lookup service address (IT use)</summary>
-    <p class="note">Already set to the deployed Google-hosted lookup service — nothing to do here normally. Only touch this if the deployment is replaced or needs to be swapped back to direct lookups.</p>
-    <div class="zip-row">
-      <input id="lookupSvcIn" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" style="flex:1 1 320px" value="${esc(saved)}">
-      <button class="btn" id="lookupSvcSaveBtn">Save</button>
-      <button class="btn" id="lookupSvcTestBtn">Check connection</button>
-      <button class="btn" id="lookupSvcClearBtn">Clear</button>
-    </div>
-    <p class="note" id="lookupTestOut" style="margin:10px 0 0"></p>
-   </details>
    <div class="card"><h3>How to use it without sounding like a tour guide</h3><ul class="dont" style="margin:0">
     <li><b>One line, then a question about them.</b> “How long have you been in Austin?” beats a list of facts.</li>
     <li><b>Never pretend you’ve been there</b> or that you’re local. Curiosity is more believable than fake familiarity.</li>
@@ -3988,9 +3964,6 @@ const RETRY_FNS = { rapportOut: () => runRapport(), rapportOut2: () => runRappor
 document.addEventListener("click", e => {
   if(e.target.id==="zipGo") runRapport();
   if(e.target.id==="zipGo2") runRapport2();
-  if(e.target.id==="lookupSvcSaveBtn"){ store.set("rapportLookupService", ($("#lookupSvcIn").value||"").trim()); $("#lookupTestOut").textContent = "Saved."; }
-  if(e.target.id==="lookupSvcClearBtn"){ store.set("rapportLookupService",""); $("#lookupSvcIn").value=""; $("#lookupTestOut").textContent = "Cleared — looking up directly again."; }
-  if(e.target.id==="lookupSvcTestBtn") checkLookupService();
   const retry = e.target.closest("[data-retry]"); if(retry){ (RETRY_FNS[retry.dataset.retry]||runRapport)(); }
 });
 document.addEventListener("keydown", e => {
